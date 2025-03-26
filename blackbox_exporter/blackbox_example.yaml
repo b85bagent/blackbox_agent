@@ -1,0 +1,121 @@
+modules:
+  Test_http:
+    #互相排斥的參數:
+    #1. basic_auth、oauth2 和 authorization 
+    #2. proxy_from_environment: true vs proxy_url: http://127.0.0.1:3128 && no_proxy: http://127.0.0.1:3129(true 時不能帶)
+    #3. body vs body_file
+    http:
+      ### 以下三個只能選一個用 ###
+      # oauth2:
+      #   client_id: client_id
+      #   client_secret: client_secret
+      #   endpoint_params: 
+      #     grant_type: client_credentials
+      #   token_url: https://api.example.com/token
+      # authorization:
+      #   type: Bearer
+      basic_auth:
+        username: lextest
+        password: 123456
+      ### 以上三個只能選一個用 ###
+      body_file: '"/files/body.txt"'
+      body_size_limit: 0
+      compression: gzip
+      enable_http2: true
+      fail_if_body_matches_regexp: [Could not connect to database]
+      fail_if_body_not_matches_regexp: [Download the latest version here]
+      fail_if_header_matches:
+        - allow_missing: true
+          header: Set-Cookie
+          regexp: .*
+      fail_if_header_not_matches:
+        - allow_missing: true
+          header: Access-Control-Allow-Origin
+          regexp: (\*|example\.com)
+      fail_if_not_ssl: true
+      fail_if_ssl: true
+      follow_redirects: true
+      headers: 
+        Content-Security-Policy: Test
+      ip_protocol_fallback: true
+      method: get
+      preferred_ip_protocol: ip6
+      proxy_from_environment: false
+      proxy_url: http://127.0.0.1:3128  
+      no_proxy: http://127.0.0.1:3129
+      skip_resolve_phase_with_proxy: true
+      tls_config:
+        ca_file: /certs/my_cert.crt
+        cert_file: /certs/my_cert.crt
+        insecure_skip_verify: true
+        key_file: '123'
+        min_version: TLS12
+        server_name: '123'
+    prober: http
+    timeout: 50s
+  Test_grpc:
+    grpc:
+      ip_protocol_fallback: true
+      preferred_ip_protocol: ip4
+      service: 127.0.0.12
+      tls: true
+    prober: grpc
+    timeout: 50s
+  Test_icmp:
+    icmp:
+      ip_protocol_fallback: true
+      payload_size: 10
+      preferred_ip_protocol: ip6
+      source_ip_address: 127.0.0.1
+      ttl: 030
+    prober: icmp
+    timeout: 50s
+  Test_dns:
+    dns:
+      dns_over_tls: false
+      ip_protocol_fallback: true
+      preferred_ip_protocol: ip6
+      query_class: IN
+      query_name: www.prometheus.io
+      query_type: ANY
+      recursion_desired: true
+      source_ip_address: 127.0.0.1
+      transport_protocol: '123'
+      valid_rcodes:
+      - NOERROR
+      validate_additional_rrs:
+        fail_if_all_match_regexp: ['']
+        fail_if_matches_regexp: [.*127.0.0.1]
+        fail_if_none_matches_regexp: ['']
+        fail_if_not_matches_regexp: ['']
+      validate_answer_rrs:
+        fail_if_all_match_regexp:  [.*127.0.0.1]
+        fail_if_matches_regexp:  [.*127.0.0.1]
+        fail_if_none_matches_regexp: [127.0.0.1]
+        fail_if_not_matches_regexp: [www.prometheus.io.\t300\tIN\tA\t127.0.0.1]
+      validate_authority_rrs:
+        fail_if_all_match_regexp: ['']
+        fail_if_matches_regexp:  [.*127.0.0.1]
+        fail_if_none_matches_regexp: ['']
+        fail_if_not_matches_regexp: ['']
+    prober: dns
+    timeout: 50s
+  Test_tcp:
+    prober: tcp
+    tcp:
+      ip_protocol_fallback: true
+      preferred_ip_protocol: '0'
+      query_response:
+      - expect: '0'
+        send: '0'
+        starttls: true
+      source_ip_address: '0'
+      tls: true
+      tls_config:
+        ca_file: /certs/my_cert.crt
+        cert_file: /certs/my_cert.crt
+        insecure_skip_verify: true
+        key_file: '123'
+        min_version: TLS12
+        server_name: '123'
+    timeout: 50s

@@ -1,0 +1,24 @@
+scrape_configs:
+- job_name: UT-01
+  metrics_path: /ut/http01
+  params:
+    module:
+    - UT_Http01
+  scrape_interval: 20s
+  static_configs:
+  - targets:
+    - www.google.com.tw
+  - targets:
+    - google.com.tw
+- job_name: UT-02
+  metrics_path: /ut/icmp01
+  params:
+    module:
+    - UT_Icmp01
+  scrape_interval: 30s
+  static_configs:
+  - labels:
+      protocol: icmp
+      size: '80'
+    targets:
+    - 1.1.1.1

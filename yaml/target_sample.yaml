@@ -1,0 +1,122 @@
+scrape_configs:
+- job_name: http-prob
+  metrics_path: /probe/http
+  params:
+    module:
+    - http_2xx
+  scrape_interval: 10s
+  static_configs:
+  - labels:
+      check: ping
+    targets:
+    - https://tw.yahoo.com
+  - labels:
+      check: ping
+    targets:
+    - https://www.google.com/
+    - 10.40.192.145
+    - 10.11.179.18
+  - labels:
+      check: ping
+    targets:
+    - 10.11.5.249
+  - labels:
+      check: ping
+    targets:
+    - 10.11.4.1
+- job_name: http-post-prob
+  metrics_path: /probe/http-post
+  params:
+    module:
+    - http_post_2xx
+  scrape_interval: 20s
+  static_configs:
+  - targets:
+    - https://requestbin.com/
+  - labels:
+      check: post
+    targets:
+    - https://beeceptor.com/
+    - https://requestbin.com/
+  - labels:
+      check: post
+    targets:
+    - https://httpbin.org/
+  - labels:
+      check: ping
+    targets:
+    - 10.11.4.1
+- job_name: dns-prob
+  metrics_path: /probe/dns
+  params:
+    module:
+    - dns_test
+  scrape_interval: 10s
+  static_configs:
+  - labels:
+      target: https://developers.cloudflare.com/1.1.1.1
+    targets:
+    - https://developers.cloudflare.com/1.1.1.1
+  - labels:
+      check: dns
+    targets:
+    - 8.8.8.8
+    - 8.8.4.4
+  - labels:
+      check: dns
+    targets:
+    - 1.1.1.1
+    - https://developers.cloudflare.com/1.1.1.1
+  - labels:
+      check: OpenDNS
+    targets:
+    - 208.67.222.222
+    - 208.67.220.220
+    - https://www.opendns.com/
+- job_name: tcp-prob
+  metrics_path: /probe/tcp
+  params:
+    module:
+    - tcp_connect
+  scrape_interval: 10s
+  static_configs:
+  - targets:
+    - 8.8.8.8:53
+  - labels:
+      check: tcp
+    targets:
+    - Portquiz.net
+    - 8.8.8.8:53
+- job_name: icmp-prob
+  metrics_path: /probe/icmp
+  params:
+    module:
+    - icmp
+  scrape_interval: 10s
+  static_configs:
+  - labels:
+      check: icmp
+    targets:
+    - 8.8.8.8
+    - 8.8.4.4
+  - labels:
+      check: icmp
+    targets:
+    - 1.1.1.1
+    - 1.0.0.1
+- job_name: grpc-prob
+  metrics_path: /probe/grpc
+  params:
+    module:
+    - grpc
+  scrape_interval: 10s
+  static_configs:
+  - labels:
+      check: grpc
+    targets:
+    - 8.8.8.8
+  - labels:
+      check: grpc
+    targets:
+    - 1.1.1.1
+    - 1.0.0.1

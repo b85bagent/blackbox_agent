@@ -1,0 +1,12 @@
+scrape_configs:
+- job_name: icmp
+  metrics_path: /probe/icmp
+  params:
+    module:
+    - icmp
+  scrape_interval: 30s
+  static_configs:
+  - labels:
+      device_name: local_test
+    targets:
+    - 127.0.0.1

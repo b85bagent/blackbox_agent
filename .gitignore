@@ -1,0 +1,38 @@
+# Go 專案常見忽略文件
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# 輸出文件
+output.txt
+*.log
+
+# IDE 相關
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系統文件
+.DS_Store
+Thumbs.db
+
+# 依賴目錄
+/vendor/
+
+# 證書文件
+*.crt
+*.key
+*.pem
+
+# 環境變量文件
+.env
+.env.local
+
+# 臨時文件
+*.tmp
+*.temp 

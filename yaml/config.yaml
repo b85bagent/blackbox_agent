@@ -1,0 +1,36 @@
+#Opensearch 
+opensearch:
+  index: "lex-test12-%{YYYY-MM-DD}"
+  enable: false
+  One:
+    host: ${OPENSEARCH_HOST}  # ["https://10.11.233.102:9200"]
+    username: "admin"
+    password: "systex123!"
+
+#RabbitMQ
+
+rabbitMQ:
+  One:
+    host: ["10.11.233.80:5672"] 
+    username: "admin"
+    password: "admin123"
+    RabbitMQExchange: "format" 
+    RabbitMQRoutingKey: "format" 
+    RabbitMQQueue: ["rpc-modules","rpc-scrape-configs"] 
+
+#Prometheus
+prometheus:
+  prometheusUrl: ${PROMETHEUS_URL}
+  username: ${PROMETHEUS_USERNAME}
+  password: ${PROMETHEUS_PASSWORD}
+  prometheus_cert: ${PROMETHEUS_CERT}
+  insecuretls: ${INSECURETLS}
+
+
+
+#Const
+const:
+  httpRetrySecond: 5
+  debug: true
+  maxGoroutines: 500
+  http_server_port: "8081"

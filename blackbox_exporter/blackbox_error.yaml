@@ -1,0 +1,64 @@
+modules:
+  Lex_test:
+    icmp:
+      dont_fragment: true
+      ip_protocol_fallback: true
+      payload_size: '10'
+      preferred_ip_protocol: ip6
+      source_ip_address: 127.0.0.1
+      ttl: '030'
+    prober: icmp
+    timeout: 50s
+  UT-Dns01:
+    dns:
+      dns_over_tls: false
+      ip_protocol_fallback: true
+      preferred_ip_protocol: ip4
+      query_class: IN
+      query_name: test
+      query_type: ANY
+      recursion_desired: true
+      source_ip_address: 1.1.1.1
+      tls_config:
+        insecure_skip_verify: false
+      transport_protocol: udp
+      valid_rcodes:
+      - NOERROR
+    prober: dns
+    timeout: 30s
+  UT_Http01:
+    http:
+      method: get
+    prober: http
+    timeout: 15s
+  UT_Http02:
+    prober: http
+  UT_Icmp01:
+    icmp:
+      dont_fragment: false
+      ip_protocol_fallback: true
+      preferred_ip_protocol: ip4
+      source_ip_address: 10.10.10.10
+    prober: icmp
+  dns_test:
+    prober: dns
+    timeout: 5s
+  grpc:
+    prober: grpc
+  grpc_plain:
+    prober: grpc
+  http_post_2xx:
+    prober: http
+    timeout: 3s
+  icmp:
+    prober: icmp
+    timeout: 5s
+  irc_banner:
+    prober: tcp
+  pop3s_banner:
+    prober: tcp
+    timeout: 1s
+  ssh_banner:
+    prober: tcp
+  tcp_connect:
+    prober: tcp

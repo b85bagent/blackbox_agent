@@ -1,0 +1,13 @@
+version: '3'
+services:
+  app:
+    restart: always
+    image: blackbox_agent:1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "3M"
+        max-file: "3"
+    environment:
+      - TZ=Asia/Taipei
+      - OPENSEARCH_HOST=["https://10.11.233.102:9200"]
