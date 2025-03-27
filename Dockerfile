@@ -1,5 +1,6 @@
 # 第一階段
-FROM golang:1.18.1-alpine AS builder
+#FROM golang:1.18.1-alpine AS builder
+FROM golang:1.19-alpine AS builder
 
 RUN apk update && apk add --no-cache git
 
@@ -16,13 +17,18 @@ RUN go build -o blackbox_agent
 # 第二階段
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates tzdata
+ENV PATH="/venv/bin:$PATH" \
+    TZ="Asia/Taipei"
+
 
 WORKDIR /root/
 
 COPY --from=builder /app/blackbox_agent .
 COPY --from=builder /app/yaml ./yaml
+COPY --from=builder /app/yaml/config.yaml ./yaml/config.yaml
 COPY --from=builder /app/blackbox_exporter ./blackbox_exporter
+COPY --from=builder /app/prometheus.crt ./prometheus.crt
 
 EXPOSE 8080
 
