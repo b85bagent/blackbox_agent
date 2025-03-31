@@ -28,7 +28,7 @@ COPY --from=builder /app/blackbox_agent .
 COPY --from=builder /app/yaml ./yaml
 COPY --from=builder /app/yaml/config.yaml ./yaml/config.yaml
 COPY --from=builder /app/blackbox_exporter ./blackbox_exporter
-COPY --from=builder /app/prometheus.crt ./prometheus.crt
+#COPY --from=builder /app/prometheus.crt ./prometheus.crt
 
 EXPOSE 8080
 
