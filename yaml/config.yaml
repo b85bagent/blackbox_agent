@@ -11,7 +11,7 @@ opensearch:
 
 rabbitMQ:
   One:
-    host: ["10.11.233.80:5672"] 
+    host: ["10.11.233.81:5672"] 
     username: "admin"
     password: "admin123"
     RabbitMQExchange: "format" 
@@ -23,7 +23,7 @@ prometheus:
   prometheusUrl: ${PROMETHEUS_URL}
   username: ${PROMETHEUS_USERNAME}
   password: ${PROMETHEUS_PASSWORD}
-  prometheus_cert: ${PROMETHEUS_CERT}
+  prometheusCert: ${PROMETHEUS_CERT}
   insecuretls: ${INSECURETLS}
 
 
