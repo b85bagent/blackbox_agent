@@ -128,14 +128,16 @@ func doProbe(data map[string]interface{}, module bec.Module, prober bep.ProbeFn,
 			prometheus.InsecureTLS)
 		if err != nil {
 			log.Printf("建立 remoteWriteClient 時出現錯誤: %v", err)
+		} else {
+			log.Println("建立 remoteWriteClient 成功")
+			log.Println("推送 metrics 至 Prometheus 開始")
+			err = remoteWriteClient.SendMetrics(timeSeries)
+			if err != nil {
+				log.Printf("推送 metrics 至 Prometheus 時出現錯誤: %v", err)
+			}
+			log.Println("推送 metrics 至 Prometheus 成功")
 		}
-		log.Println("建立 remoteWriteClient 成功")
-		log.Println("推送 metrics 至 Prometheus 開始")
-		err = remoteWriteClient.SendMetrics(timeSeries)
-		if err != nil {
-			log.Printf("推送 metrics 至 Prometheus 時出現錯誤: %v", err)
-		}
-		log.Println("推送 metrics 至 Prometheus 成功")
+
 		// err = remote.Prometheus_remote(metrics, target, module.Prober, data["jobName"].(string), host, label, tags)
 		// if err != nil {
 		// 	log.Printf("推送 metrics 至 Prometheus 时出现错误: %v", err)
