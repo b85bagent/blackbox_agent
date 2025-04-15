@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"blackbox_agent/blackbox_exporter/config"
+	"blackbox_agent/pkg/blackbox_exporter/config"
 
 	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"

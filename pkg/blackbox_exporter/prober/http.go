@@ -41,7 +41,7 @@ import (
 	"github.com/prometheus/common/version"
 	"golang.org/x/net/publicsuffix"
 
-	"blackbox_agent/blackbox_exporter/config"
+	"blackbox_agent/pkg/blackbox_exporter/config"
 )
 
 func matchRegularExpressions(reader io.Reader, httpConfig config.HTTPProbe, logger log.Logger) bool {

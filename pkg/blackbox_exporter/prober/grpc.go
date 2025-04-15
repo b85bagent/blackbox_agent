@@ -14,7 +14,7 @@
 package prober
 
 import (
-	"blackbox_agent/blackbox_exporter/config"
+	"blackbox_agent/pkg/blackbox_exporter/config"
 	"context"
 	"net"
 	"net/url"

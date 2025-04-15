@@ -10,7 +10,7 @@ services:
         max-size: "3M"
         max-file: "3"
     volumes:
-      - ./blackbox_exporter/blackbox.yaml:/root/blackbox_exporter/blackbox.yaml  # 挂载 blackbox.yaml 在本機目錄，確保重建容器時可以繼承上次的設定
+      - ./pkg/blackbox_exporter/blackbox.yaml:/root/blackbox_exporter/blackbox.yaml  # 挂载 blackbox.yaml 在本機目錄，確保重建容器時可以繼承上次的設定
       - ./yaml/target.yaml:/root/yaml/target.yaml  # 挂载 target.yaml在本機目錄，確保重建容器時可以繼承上次掃描Target的設定
         #
     environment:
