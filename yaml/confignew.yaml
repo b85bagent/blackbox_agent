@@ -21,10 +21,11 @@ rabbitMQ:
 
 #Prometheus
 prometheus:
-  One:
-    #host: ["http://10.11.233.10:9090/api/v1/write"]
-    host: [${PROMETHEUS_URL}]
-    enable: true
+  prometheusUrl: ${PROMETHEUS_URL}
+  username: ${PROMETHEUS_USERNAME}
+  password: ${PROMETHEUS_PASSWORD}
+  prometheusCert: ${PROMETHEUS_CERT}
+  insecuretls: ${INSECURETLS}
 
 
 #Const
