@@ -1,10 +1,10 @@
 package exporter
 
 import (
-	bec "blackbox_agent/blackbox_exporter/config"
-	bep "blackbox_agent/blackbox_exporter/prober"
 	"blackbox_agent/model/metric"
 	rmclient "blackbox_agent/model/prometheusremotewrite"
+	bec "blackbox_agent/pkg/blackbox_exporter/config"
+	bep "blackbox_agent/pkg/blackbox_exporter/prober"
 	"blackbox_agent/server"
 	"bytes"
 	"context"

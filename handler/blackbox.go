@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	bec "blackbox_agent/blackbox_exporter/config"
+	bec "blackbox_agent/pkg/blackbox_exporter/config"
 
 	logger "github.com/go-kit/log"
 	"golang.org/x/sync/semaphore"

@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	bep "blackbox_agent/blackbox_exporter/prober"
+	bep "blackbox_agent/pkg/blackbox_exporter/prober"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
