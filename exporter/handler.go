@@ -2,7 +2,7 @@ package exporter
 
 import (
 	"blackbox_agent/model/metric"
-	rmclient "blackbox_agent/model/prometheusremotewrite"
+	promeRepo "blackbox_agent/model/prometheusclient"
 	bec "blackbox_agent/pkg/blackbox_exporter/config"
 	bep "blackbox_agent/pkg/blackbox_exporter/prober"
 	"blackbox_agent/server"
@@ -15,6 +15,7 @@ import (
 	"os"
 	"time"
 
+	tools "github.com/b85bagent/tools/prometheus"
 	logger "github.com/go-kit/log"
 	"github.com/golang/snappy"
 	"github.com/prometheus/client_golang/prometheus"
@@ -118,7 +119,8 @@ func doProbe(data map[string]interface{}, module bec.Module, prober bep.ProbeFn,
 		}
 		log.Println("處理 metrics 成功")
 		log.Println("建立 remoteWriteClient 開始")
-		remoteWriteClient, err := rmclient.NewRemoteWriteClient(
+
+		promeClient, err := tools.NewPrometheusClient(
 			prometheus.PrometheusUrl,
 			prometheus.Username,
 			prometheus.Password,
@@ -126,22 +128,18 @@ func doProbe(data map[string]interface{}, module bec.Module, prober bep.ProbeFn,
 			"",
 			prometheus.PrometheusCert,
 			prometheus.InsecureTLS)
-		if err != nil {
+		if err != nil || promeClient == nil {
 			log.Printf("建立 remoteWriteClient 時出現錯誤: %v", err)
+			log.Println("推送 metrics 至 Prometheus 失敗")
 		} else {
 			log.Println("建立 remoteWriteClient 成功")
 			log.Println("推送 metrics 至 Prometheus 開始")
-			err = remoteWriteClient.SendMetrics(timeSeries)
+			err = promeRepo.SendMetrics(promeClient, timeSeries)
 			if err != nil {
 				log.Printf("推送 metrics 至 Prometheus 時出現錯誤: %v", err)
 			}
 			log.Println("推送 metrics 至 Prometheus 成功")
 		}
-
-		// err = remote.Prometheus_remote(metrics, target, module.Prober, data["jobName"].(string), host, label, tags)
-		// if err != nil {
-		// 	log.Printf("推送 metrics 至 Prometheus 时出现错误: %v", err)
-		// }
 	}
 	// 在您的 doProbe 函数中，在收集 metrics 之后
 
