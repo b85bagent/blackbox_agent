@@ -127,7 +127,7 @@ func doProbe(data map[string]interface{}, module bec.Module, prober bep.ProbeFn,
 			"",
 			"",
 			prometheus.PrometheusCert,
-			prometheus.InsecureTLS)
+			prometheus.EnableTLS)
 		if err != nil || promeClient == nil {
 			log.Printf("建立 remoteWriteClient 時出現錯誤: %v", err)
 			log.Println("推送 metrics 至 Prometheus 失敗")

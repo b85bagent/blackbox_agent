@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137
 	github.com/andybalholm/brotli v1.0.5
 	github.com/b85bagent/rabbitmq v0.0.0-20231018073823-3eb0efcaa691
-	github.com/b85bagent/tools v0.2.4
+	github.com/b85bagent/tools v0.2.5
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-kit/log v0.2.1
 	github.com/golang/snappy v0.0.4

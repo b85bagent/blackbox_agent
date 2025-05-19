@@ -5,7 +5,7 @@ type PrometheusConfig struct {
 	Username       string `yaml:"username"`
 	Password       string `yaml:"password"`
 	PrometheusCert string `yaml:"prometheusCert"`
-	InsecureTLS    bool   `yaml:"insecuretls"`
+	EnableTLS      bool   `yaml:"enable_tls"`
 }
 
 type Config struct {

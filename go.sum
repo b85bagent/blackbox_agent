@@ -7,8 +7,8 @@ github.com/b85bagent/opensearch v0.0.0-20230914031925-6512ef36008f h1:XJmsVbzPBo
 github.com/b85bagent/opensearch v0.0.0-20230914031925-6512ef36008f/go.mod h1:z0/jNZ2gWZWbnubJ2eywbOr074bk0Nara1ESjljOFVY=
 github.com/b85bagent/rabbitmq v0.0.0-20231018073823-3eb0efcaa691 h1:3n7NxKVII4HhyxADcFdVQncfwhr5auh1rhzD+//r0cw=
 github.com/b85bagent/rabbitmq v0.0.0-20231018073823-3eb0efcaa691/go.mod h1:d5jTXO3MEOJmeb+Bp502M9DE5oUOv1x44uQyG3zpTAg=
-github.com/b85bagent/tools v0.2.4 h1:s63BWa68sJezCiNgjF0/BeEYwOeLimXzgPBfItsn4x8=
-github.com/b85bagent/tools v0.2.4/go.mod h1:khJE6n3W+JtHaL0w2iw09Im/Ts8hRiRQ9xc5TaF1bi0=
+github.com/b85bagent/tools v0.2.5 h1:HNrzjIVUSAszzhjHJ0bKcYnyYtNWrklrBJHrytt1BgY=
+github.com/b85bagent/tools v0.2.5/go.mod h1:khJE6n3W+JtHaL0w2iw09Im/Ts8hRiRQ9xc5TaF1bi0=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bytedance/sonic v1.5.0/go.mod h1:ED5hyg4y6t3/9Ku1R6dU/4KyJ48DZ4jPhfY1O2AihPM=
