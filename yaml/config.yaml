@@ -24,7 +24,7 @@ prometheus:
   username: ${PROMETHEUS_USERNAME}
   password: ${PROMETHEUS_PASSWORD}
   prometheusCert: ${PROMETHEUS_CERT}
-  insecuretls: ${INSECURETLS}
+  enableTLS: ${ENABLETLS}
 
 
 

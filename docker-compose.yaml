@@ -25,5 +25,5 @@ services:
       - PROMETHEUS_USERNAME=${PROMETHEUS_USERNAME} # Prometheus Basic Auth 的帳號不需要則填空字串
       - PROMETHEUS_PASSWORD=${PROMETHEUS_PASSWORD} # Prometheus Basic Auth 的密碼不需要則填空字串
       - PROMETHEUS_CERT=${PROMETHEUS_CERT} # 指向憑證存放的位置不需要則填空字串
-      - INSECURETLS=${INSECURETLS} # 是否忽略tls驗證如果要忽略設定為true (true/false)
+      - ENABLETLS=${ENABLETLS} # 是否忽略tls驗證如果要忽略設定為true (true/false)
 
