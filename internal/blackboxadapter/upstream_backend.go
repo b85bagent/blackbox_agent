@@ -1,11 +1,11 @@
 package blackboxadapter
 
 import (
-	bec "blackbox_agent/blackbox_exporter/config"
-	bep "blackbox_agent/blackbox_exporter/prober"
 	"context"
 
 	"github.com/go-kit/log"
+	bec "github.com/prometheus/blackbox_exporter/config"
+	bep "github.com/prometheus/blackbox_exporter/prober"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -47,5 +47,5 @@ func (r upstreamProbeRunner) Run(ctx context.Context, module ModuleDef, target s
 		return false
 	}
 
-	return r.probeFn(ctx, target, upstreamModule, registry, logger)
+	return r.probeFn(ctx, target, upstreamModule, registry, newSlogLogger())
 }

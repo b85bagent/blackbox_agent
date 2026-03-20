@@ -9,6 +9,11 @@
 
 成功後進入 `TimeControl()`。
 
+`blackbox.yaml` 雖然仍是一份檔案，但在載入時會被 `internal/blackboxadapter` 分成兩條路：
+
+- upstream blackbox_exporter 可理解的 module 設定
+- 本專案自定義的 `ntp` 設定
+
 ## TimeControl
 
 `TimeControl()` 會讀取 `scrape_configs`，每個 job 解析：
@@ -44,9 +49,22 @@
 - `ProbeICMP`
 - `ProbeDNS`
 - `ProbeGRPC`
-- `ProbeNTP`
+- adapter custom `NTP` runner
 
-對應實作位於 `blackbox_exporter/prober/`。
+對應關係：
+
+- `http/tcp/icmp/dns/grpc` 由官方 `github.com/prometheus/blackbox_exporter` backend 執行
+- `ntp` 由 `internal/blackboxadapter/custom_ntp.go` 執行
+
+## blackbox.yaml 載入分流
+
+`internal/blackboxadapter.UpstreamConfigLoader` 在 `Reload()` 時會做三件事：
+
+1. 先從原始 YAML 抽出 `prober: ntp` module 的 `ntp:` 設定
+2. 產生一份移除 `ntp:` 欄位的暫存 YAML
+3. 將暫存 YAML 交給官方 `blackbox_exporter/config` 載入
+
+這樣可以保留單一 `blackbox.yaml`，同時避免官方 upstream config parser 因不認得 `ntp:` 欄位而失敗。
 
 ## 指標收集
 
@@ -58,6 +76,11 @@
 - Gather 所有 metrics
 - 呼叫 `model/metric.ProcessMetrics()` 轉成 `prompb.TimeSeries`
 - 送到 remote write endpoint
+
+其中：
+
+- upstream module 仍透過 adapter 內包住的官方 `config.Module` 執行
+- `ntp` probe 則改用 adapter 自有 `NTPProbeConfig`
 
 ## 結果整理
 

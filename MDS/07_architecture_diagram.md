@@ -16,12 +16,19 @@ flowchart LR
     BB --> YAML2[yaml/target.yaml]
     BB --> YAML3[blackbox_exporter/blackbox.yaml]
 
+    BB --> ADPLOAD[blackboxadapter loader]
+    ADPLOAD --> NTPCFG[adapter NTP config]
+    ADPLOAD --> UPCFG[upstream sanitized config]
+
     BB --> TIME[TimeControl]
     TIME --> JOB[dataResolve]
     JOB --> EXP[exporter.CheckModuleAndDoProbe]
-    EXP --> PROBER[blackbox_exporter/prober]
+    EXP --> ADPREG[blackboxadapter registry]
+    ADPREG --> UPPROBER[official blackbox_exporter probers]
+    ADPREG --> NTPPROBER[custom NTP runner]
 
-    PROBER --> METRIC[metric.ProcessMetrics]
+    UPPROBER --> METRIC[metric.ProcessMetrics]
+    NTPPROBER --> METRIC
     METRIC --> PROM[Prometheus Remote Write]
 
     JOB --> OS[model.BulkInsert]
@@ -62,9 +69,11 @@ flowchart TD
     I --> K[每個 job 建 ticker]
     K --> R[dataResolve]
     R --> G[每個 target 啟 goroutine]
-    G --> S[依 module 選 prober]
-    S --> P[執行 HTTP/TCP/ICMP/DNS/GRPC probe]
-    P --> C[Gather metrics]
+    G --> S[依 module 選 adapter runner]
+    S --> P1[執行 HTTP/TCP/ICMP/DNS/GRPC upstream probe]
+    S --> P2[執行 custom NTP probe]
+    P1 --> C[Gather metrics]
+    P2 --> C
     C --> W[轉成 prompb.TimeSeries]
     W --> PRW[送往 Prometheus Remote Write]
     C --> D[整理 probe 文件]
@@ -120,13 +129,14 @@ flowchart TD
 - `handler/blackbox.go`
 - `exporter/config.go`
 - `exporter/handler.go`
-- `blackbox_exporter/prober/*`
+- `internal/blackboxadapter/*`
 
 用途：
 
 - 排程 job
 - 平行執行 target probe
 - 收集 probe 結果與 metrics
+- 分流官方 blackbox config 與自定義 `ntp` config
 
 ### 設定更新層
 
@@ -159,4 +169,4 @@ flowchart TD
 - `http_server/` 目前未接入主啟動流程
 - metrics 處理時會產生 `output.txt`
 - `server.Server` 是全域共享狀態，修改時要注意併發與 reload 影響
-
+- `blackbox.yaml` 雖然是單一檔案，但 `ntp` 區塊不會直接交給官方 blackbox_exporter config parser，而是先由 adapter 抽出並分流

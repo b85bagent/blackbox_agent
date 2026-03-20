@@ -9,6 +9,7 @@
 - ICMP
 - DNS
 - gRPC
+- NTP
 
 每個 target 的檢查結果會被整理成：
 
@@ -19,6 +20,7 @@
 
 - 以 CLI 程式啟動
 - 以 YAML 驅動 probe 行為
+- 對同一份 `blackbox.yaml` 同時承接 upstream blackbox module 與本專案自定義 `ntp` 設定
 - 以 goroutine 平行執行 target 檢查
 - 以 RabbitMQ RPC 接收設定熱更新
 - 以 context 管理關閉與重載
@@ -40,7 +42,7 @@
 - `pkg/autoload/`: 啟動與重載控制
 - `handler/`: 執行流程、MQ、YAML 檢查
 - `exporter/`: probe 執行與 metrics 收集
+- `internal/blackboxadapter/`: blackbox backend adapter、config 分流、custom NTP probe
 - `model/`: OpenSearch 與 Prometheus remote write
-- `blackbox_exporter/`: blackbox 模組設定與 probe 實作
+- `blackbox_exporter/`: 本地保留的 blackbox YAML 樣板與尚待清理的 fork 資產
 - `yaml/`: 本地設定檔樣板與實際目標檔
-

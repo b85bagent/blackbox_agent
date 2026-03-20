@@ -198,6 +198,13 @@ type BackendAdapter interface {
 - upstream module
 - 或你自己的 blackbox fork module
 
+補充：
+
+- 由於官方 `github.com/prometheus/blackbox_exporter` 不支援本專案自定義的 `ntp:` schema
+- PR4 需要保留單一 `blackbox.yaml`，但在 adapter loader 中做雙路解析：
+  - 一路抽出 `ntp` 設定，供 custom runner 使用
+  - 一路移除 `ntp:` 欄位後交給官方 upstream config 載入
+
 ### 第五批：清理 fork 目錄
 
 最後再移除 repo 內不需要的 `blackbox_exporter/` 原始碼。
@@ -313,11 +320,17 @@ type BackendAdapter interface {
 
 - `go.mod` 引入 upstream 或自家 fork module
 - adapter backend 切到 module import
+- adapter loader 對單一 `blackbox.yaml` 做 upstream/custom 分流
 
 建議策略：
 
 - 優先先引自家 fork module
 - 等 adapter 穩定後再追 upstream tag
+
+若直接引官方 upstream，前提是：
+
+- `ntp` schema 已完全留在 adapter
+- adapter 會先產生 upstream 可接受的 sanitized config
 
 驗證：
 
@@ -360,6 +373,7 @@ type BackendAdapter interface {
 
 - upstream 並非穩定 library API
 - 任何 logger/config/prober 變更都可能打到 adapter
+- upstream 不接受本專案自定義 `ntp:` schema，必須由 adapter 先分流
 
 適用：
 

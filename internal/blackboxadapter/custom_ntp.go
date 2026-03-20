@@ -1,7 +1,6 @@
 package blackboxadapter
 
 import (
-	bec "blackbox_agent/blackbox_exporter/config"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -47,15 +46,10 @@ type ntpSample struct {
 type customNTPRunner struct{}
 
 func (r customNTPRunner) Run(ctx context.Context, module ModuleDef, target string, registry *prometheus.Registry, logger log.Logger) bool {
-	upstreamModule, ok := upstreamModuleFromDef(module)
-	if !ok {
-		return false
-	}
-
-	return probeNTP(ctx, target, upstreamModule, registry, logger)
+	return probeNTP(ctx, target, module.NTP, registry, logger)
 }
 
-func probeNTP(ctx context.Context, target string, module bec.Module, registry *prometheus.Registry, logger log.Logger) bool {
+func probeNTP(ctx context.Context, target string, module NTPProbeConfig, registry *prometheus.Registry, logger log.Logger) bool {
 	buildInfo := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "ntp_build_info",
 		Help: "Build information for the embedded NTP probe.",
@@ -154,9 +148,9 @@ func probeNTP(ctx context.Context, target string, module bec.Module, registry *p
 	return true
 }
 
-func collectNTPSample(ctx context.Context, target string, module bec.Module, registry *prometheus.Registry, logger log.Logger) (ntpSample, error) {
+func collectNTPSample(ctx context.Context, target string, module NTPProbeConfig, registry *prometheus.Registry, logger log.Logger) (ntpSample, error) {
 	targetHost, targetPort := splitNTPAddress(target)
-	ip, _, err := chooseProtocol(ctx, module.NTP.IPProtocol, module.NTP.IPProtocolFallback, targetHost, registry, logger)
+	ip, _, err := chooseProtocol(ctx, module.IPProtocol, module.IPProtocolFallback, targetHost, registry, logger)
 	if err != nil {
 		return ntpSample{}, err
 	}
@@ -166,12 +160,12 @@ func collectNTPSample(ctx context.Context, target string, module bec.Module, reg
 		return ntpSample{}, err
 	}
 
-	threshold := module.NTP.HighDriftThreshold.Seconds()
-	if module.NTP.MeasurementDuration <= 0 || math.Abs(best.DriftSeconds) <= threshold {
+	threshold := module.HighDriftThreshold.Seconds()
+	if module.MeasurementDuration <= 0 || math.Abs(best.DriftSeconds) <= threshold {
 		return best, nil
 	}
 
-	deadline := time.Now().Add(module.NTP.MeasurementDuration)
+	deadline := time.Now().Add(module.MeasurementDuration)
 	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(deadline) {
 		deadline = ctxDeadline
 	}
@@ -190,26 +184,26 @@ func collectNTPSample(ctx context.Context, target string, module bec.Module, reg
 	return best, nil
 }
 
-func queryNTP(ctx context.Context, ip *net.IPAddr, targetHost, targetPort string, module bec.Module, logger log.Logger) (ntpSample, error) {
+func queryNTP(ctx context.Context, ip *net.IPAddr, targetHost, targetPort string, module NTPProbeConfig, logger log.Logger) (ntpSample, error) {
 	network := "udp4"
 	if ip.IP.To4() == nil {
 		network = "udp6"
 	}
 
 	var localAddr net.Addr
-	if module.NTP.SourceIPAddress != "" {
-		srcIP := net.ParseIP(module.NTP.SourceIPAddress)
+	if module.SourceIPAddress != "" {
+		srcIP := net.ParseIP(module.SourceIPAddress)
 		if srcIP == nil {
-			return ntpSample{}, fmt.Errorf("invalid source_ip_address %q", module.NTP.SourceIPAddress)
+			return ntpSample{}, fmt.Errorf("invalid source_ip_address %q", module.SourceIPAddress)
 		}
 		if network == "udp6" {
 			if srcIP.To4() != nil {
-				return ntpSample{}, fmt.Errorf("source_ip_address %q is not IPv6", module.NTP.SourceIPAddress)
+				return ntpSample{}, fmt.Errorf("source_ip_address %q is not IPv6", module.SourceIPAddress)
 			}
 			localAddr = &net.UDPAddr{IP: srcIP}
 		} else {
 			if srcIP.To4() == nil {
-				return ntpSample{}, fmt.Errorf("source_ip_address %q is not IPv4", module.NTP.SourceIPAddress)
+				return ntpSample{}, fmt.Errorf("source_ip_address %q is not IPv4", module.SourceIPAddress)
 			}
 			localAddr = &net.UDPAddr{IP: srcIP.To4()}
 		}
@@ -230,7 +224,7 @@ func queryNTP(ctx context.Context, ip *net.IPAddr, targetHost, targetPort string
 	}
 
 	request := make([]byte, ntpPacketSize)
-	request[0] = byte(module.NTP.ProtocolVersion<<3) | 3
+	request[0] = byte(module.ProtocolVersion<<3) | 3
 	t1 := time.Now().UTC()
 	writeNTPTimestamp(request[40:], t1)
 
@@ -272,7 +266,7 @@ func queryNTP(ctx context.Context, ip *net.IPAddr, targetHost, targetPort string
 		Stratum:                   float64(response[1]),
 		Leap:                      float64((response[0] >> 6) & 0x3),
 		Server:                    normalizeNTPServer(targetHost, targetPort),
-		ReferenceID:               parseReferenceID(response[12:16], int(response[1]), module.NTP.ProtocolVersion),
+		ReferenceID:               parseReferenceID(response[12:16], int(response[1]), module.ProtocolVersion),
 	}
 
 	return sample, nil
