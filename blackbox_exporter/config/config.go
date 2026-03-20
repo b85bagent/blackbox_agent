@@ -45,6 +45,7 @@ var (
 		TCP:  DefaultTCPProbe,
 		ICMP: DefaultICMPProbe,
 		DNS:  DefaultDNSProbe,
+		NTP:  DefaultNTPProbe,
 	}
 
 	// DefaultHTTPProbe set default value for HTTPProbe
@@ -75,6 +76,14 @@ var (
 	DefaultDNSProbe = DNSProbe{
 		IPProtocolFallback: true,
 		Recursion:          true,
+	}
+
+	// DefaultNTPProbe set default value for NTPProbe
+	DefaultNTPProbe = NTPProbe{
+		ProtocolVersion:    4,
+		IPProtocolFallback: true,
+		MeasurementDuration: 30 * time.Second,
+		HighDriftThreshold:  10 * time.Millisecond,
 	}
 )
 
@@ -108,8 +117,14 @@ func (sc *SafeConfig) ReloadConfig(confFile string, logger log.Logger) (err erro
 	var c = &Config{}
 	defer func() {
 		if err != nil {
+			if sc.configReloadSuccess == nil {
+				return
+			}
 			sc.configReloadSuccess.Set(0)
 		} else {
+			if sc.configReloadSuccess == nil || sc.configReloadSeconds == nil {
+				return
+			}
 			sc.configReloadSuccess.Set(1)
 			sc.configReloadSeconds.SetToCurrentTime()
 		}
@@ -200,6 +215,7 @@ type Module struct {
 	ICMP    ICMPProbe     `yaml:"icmp,omitempty"`
 	DNS     DNSProbe      `yaml:"dns,omitempty"`
 	GRPC    GRPCProbe     `yaml:"grpc,omitempty"`
+	NTP     NTPProbe      `yaml:"ntp,omitempty"`
 }
 
 type HTTPProbe struct {
@@ -285,6 +301,15 @@ type DNSRRValidator struct {
 	FailIfAllMatchRegexp    []string `yaml:"fail_if_all_match_regexp,omitempty"`
 	FailIfNotMatchesRegexp  []string `yaml:"fail_if_not_matches_regexp,omitempty"`
 	FailIfNoneMatchesRegexp []string `yaml:"fail_if_none_matches_regexp,omitempty"`
+}
+
+type NTPProbe struct {
+	IPProtocol          string        `yaml:"preferred_ip_protocol,omitempty"`
+	IPProtocolFallback  bool          `yaml:"ip_protocol_fallback,omitempty"`
+	SourceIPAddress     string        `yaml:"source_ip_address,omitempty"`
+	ProtocolVersion     int           `yaml:"protocol_version,omitempty"`
+	MeasurementDuration time.Duration `yaml:"measurement_duration,omitempty"`
+	HighDriftThreshold  time.Duration `yaml:"high_drift_threshold,omitempty"`
 }
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
@@ -398,6 +423,27 @@ func (s *DNSRRValidator) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	if err := unmarshal((*plain)(s)); err != nil {
 		return err
 	}
+	return nil
+}
+
+// UnmarshalYAML implements the yaml.Unmarshaler interface.
+func (s *NTPProbe) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	*s = DefaultNTPProbe
+	type plain NTPProbe
+	if err := unmarshal((*plain)(s)); err != nil {
+		return err
+	}
+
+	if s.ProtocolVersion < 2 || s.ProtocolVersion > 4 {
+		return errors.New("protocol_version must be one of 2, 3 or 4")
+	}
+	if s.MeasurementDuration < 0 {
+		return errors.New("measurement_duration cannot be negative")
+	}
+	if s.HighDriftThreshold < 0 {
+		return errors.New("high_drift_threshold cannot be negative")
+	}
+
 	return nil
 }
 

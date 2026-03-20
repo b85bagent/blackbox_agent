@@ -1,6 +1,8 @@
 module blackbox_agent
 
-go 1.18
+go 1.26
+
+toolchain go1.26.1
 
 require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137

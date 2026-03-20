@@ -437,8 +437,7 @@ func ProbeHTTP(ctx context.Context, target string, module config.Module, registr
 		request.Header.Set(key, value)
 	}
 
-	_, hasUseragent := request.Header["User-agent"]
-	if !hasUseragent {
+	if request.Header.Get("User-Agent") == "" {
 		request.Header.Set("User-agent", useragentDefaultHeader)
 	}
 

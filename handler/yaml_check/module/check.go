@@ -34,7 +34,7 @@ func CheckModuleFormat(data []byte) (bool, error) {
 		return false, err
 	}
 
-	allowedProbers := []string{"http", "tcp", "grpc", "icmp", "dns"}
+	allowedProbers := []string{"http", "tcp", "grpc", "icmp", "dns", "ntp"}
 
 	// 建立一個新的模組列表，用於儲存非空模組
 	validModules := make(map[string]Module)
@@ -140,6 +140,8 @@ func validateModule(module Module, moduleName string) (bool, error) {
 		return validateTCPConfig(module.Extra, moduleName)
 	case "grpc":
 		return validateGRPCConfig(module.Extra, moduleName)
+	case "ntp":
+		return validateNTPConfig(module.Extra, moduleName)
 	default:
 		return false, errors.New("Invalid Prober value " + module.Prober)
 	}

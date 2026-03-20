@@ -16,6 +16,14 @@ modules:
       service: service1
       tls: false
     prober: grpc
+  ntp:
+    ntp:
+      high_drift_threshold: 10ms
+      measurement_duration: 30s
+      preferred_ip_protocol: ip4
+      protocol_version: 4
+    prober: ntp
+    timeout: 5s
   http_2xx:
     http:
       preferred_ip_protocol: ip4

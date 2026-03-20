@@ -144,15 +144,12 @@ func generateSelfSignedCertificateWithPrivateKey(template *x509.Certificate, pri
 }
 
 func TestChooseProtocol(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping network dependent test")
-	}
 	ctx := context.Background()
 	registry := prometheus.NewPedanticRegistry()
 	w := log.NewSyncWriter(os.Stderr)
 	logger := log.NewLogfmtLogger(w)
 
-	ip, _, err := chooseProtocol(ctx, "ip4", true, "ipv6.google.com", registry, logger)
+	ip, _, err := chooseProtocol(ctx, "ip4", true, "::1", registry, logger)
 	if err != nil {
 		t.Error(err)
 	}
@@ -162,10 +159,8 @@ func TestChooseProtocol(t *testing.T) {
 
 	registry = prometheus.NewPedanticRegistry()
 
-	ip, _, err = chooseProtocol(ctx, "ip4", false, "ipv6.google.com", registry, logger)
-	if err != nil && !err.(*net.DNSError).IsNotFound {
-		t.Error(err)
-	} else if err == nil {
+	ip, _, err = chooseProtocol(ctx, "ip4", false, "::1", registry, logger)
+	if err == nil {
 		t.Error("should set error")
 	}
 	if ip != nil {

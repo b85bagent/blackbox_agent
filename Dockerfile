@@ -1,5 +1,5 @@
 # 第一階段
-FROM golang:1.18.1-alpine AS builder
+FROM golang:1.26.1-alpine3.23 AS builder
 
 RUN apk update && apk add --no-cache git
 

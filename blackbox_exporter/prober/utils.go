@@ -69,6 +69,27 @@ func chooseProtocol(ctx context.Context, IPProtocol string, fallbackIPProtocol b
 	}()
 
 	resolver := &net.Resolver{}
+	if literal := net.ParseIP(target); literal != nil {
+		ipAddr := &net.IPAddr{IP: literal}
+		switch {
+		case IPProtocol == "ip4" && literal.To4() != nil:
+			probeIPProtocolGauge.Set(4)
+		case IPProtocol == "ip6" && literal.To4() == nil:
+			probeIPProtocolGauge.Set(6)
+		case fallbackIPProtocol:
+			if literal.To4() != nil {
+				probeIPProtocolGauge.Set(4)
+			} else {
+				probeIPProtocolGauge.Set(6)
+			}
+		default:
+			return nil, 0.0, fmt.Errorf("unable to find ip; no fallback")
+		}
+		probeIPAddrHash.Set(ipHash(literal))
+		level.Info(logger).Log("msg", "Using literal target address", "target", target, "ip", literal.String())
+		return ipAddr, lookupTime, nil
+	}
+
 	if !fallbackIPProtocol {
 		ips, err := resolver.LookupIP(ctx, IPProtocol, target)
 		if err == nil {

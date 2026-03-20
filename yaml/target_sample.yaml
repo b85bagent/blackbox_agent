@@ -120,3 +120,15 @@ scrape_configs:
     targets:
     - 1.1.1.1
     - 1.0.0.1
+- job_name: ntp-prob
+  metrics_path: /probe/ntp
+  params:
+    module:
+    - ntp
+  scrape_interval: 30s
+  static_configs:
+  - labels:
+      check: ntp
+    targets:
+    - time.google.com
+    - time.cloudflare.com

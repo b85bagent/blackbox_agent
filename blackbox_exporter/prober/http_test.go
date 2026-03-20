@@ -959,9 +959,9 @@ func TestFailIfBodyMatchesRegexp(t *testing.T) {
 
 	for name, testcase := range testcases {
 		t.Run(name, func(t *testing.T) {
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				fmt.Fprintf(w, testcase.respBody)
-			}))
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprint(w, testcase.respBody)
+				}))
 			defer ts.Close()
 
 			recorder := httptest.NewRecorder()
@@ -1470,9 +1470,9 @@ func TestSkipResolvePhase(t *testing.T) {
 		defer cancel()
 		httpCfg := pconfig.DefaultHTTPClientConfig
 		u, err := url.Parse("http://127.0.0.1:3128")
-		if err != nil {
-			t.Fatalf(err.Error())
-		}
+			if err != nil {
+				t.Fatalf("%v", err)
+			}
 		httpCfg.ProxyURL = pconfig.URL{
 			URL: u,
 		}

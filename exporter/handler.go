@@ -1,8 +1,7 @@
 package exporter
 
 import (
-	bec "blackbox_agent/blackbox_exporter/config"
-	bep "blackbox_agent/blackbox_exporter/prober"
+	"blackbox_agent/internal/blackboxadapter"
 	"blackbox_agent/model/metric"
 	rmclient "blackbox_agent/model/prometheusremotewrite"
 	"blackbox_agent/server"
@@ -23,9 +22,9 @@ import (
 )
 
 // 確認module類型，給予不同的Probe
-func CheckModuleAndDoProbe(module string, data map[string]interface{}, target string, sc *bec.SafeConfig, label, tags map[string]interface{}) (resultData map[string]interface{}, err error) {
+func CheckModuleAndDoProbe(module string, data map[string]interface{}, target string, loader blackboxadapter.ConfigLoader, registry blackboxadapter.ProberRegistry, label, tags map[string]interface{}) (resultData map[string]interface{}, err error) {
 
-	result, err := comparisonConfigAndDoProbe(data, module, target, sc, label, tags)
+	result, err := comparisonConfigAndDoProbe(data, module, target, loader, registry, label, tags)
 	if err != nil {
 		log.Println("comparisonConfig error: ", err)
 		return nil, err
@@ -35,38 +34,29 @@ func CheckModuleAndDoProbe(module string, data map[string]interface{}, target st
 }
 
 // 比對yaml檔內容，並且Probe
-func comparisonConfigAndDoProbe(data map[string]interface{}, m, target string, sc *bec.SafeConfig, label, tags map[string]interface{}) (resultData map[string]interface{}, err error) {
+func comparisonConfigAndDoProbe(data map[string]interface{}, m, target string, loader blackboxadapter.ConfigLoader, registry blackboxadapter.ProberRegistry, label, tags map[string]interface{}) (resultData map[string]interface{}, err error) {
 
-	//comparisonConfig
-	// sc.Lock()
-	module, ok := sc.C.Modules[m]
-	// sc.Unlock()
-
+	module, ok := loader.Module(m)
 	if !ok {
-
 		return nil, errors.New("Module " + m + " not found")
 	}
 
-	prober, ok := Probers[module.Prober]
-
+	prober, ok := registry.Get(module.Prober)
 	if !ok {
-
-		return nil, errors.New("Prober: " + module.Prober + "not found")
+		return nil, errors.New("Prober: " + module.Prober + " not found")
 	}
 
-	//doProbe
 	result, errProbe := doProbe(data, module, prober, target, label, tags)
 	if errProbe != nil {
-
 		log.Println("Probe failed: ", errProbe)
-		return nil, err
+		return nil, errProbe
 	}
 
 	return result, nil
 }
 
 // Probe
-func doProbe(data map[string]interface{}, module bec.Module, prober bep.ProbeFn, target string, label, tags map[string]interface{}) (resultData map[string]interface{}, err error) {
+func doProbe(data map[string]interface{}, module blackboxadapter.ModuleDef, prober blackboxadapter.ProbeRunner, target string, label, tags map[string]interface{}) (resultData map[string]interface{}, err error) {
 
 	logger := logger.NewNopLogger()
 
@@ -89,10 +79,8 @@ func doProbe(data map[string]interface{}, module bec.Module, prober bep.ProbeFn,
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	// PrometheusEnable := server.GetServerInstance().GetPrometheusEnable()
-
 	start := time.Now()
-	success := prober(ctx, target, module, registry, logger)
+	success := prober.Run(ctx, module, target, registry, logger)
 	if success {
 		probeSuccessGauge.Set(1)
 	}
