@@ -1,10 +1,11 @@
-package prober
+package blackboxadapter
 
 import (
-	"blackbox_agent/blackbox_exporter/config"
+	bec "blackbox_agent/blackbox_exporter/config"
 	"context"
 	"encoding/binary"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"math"
 	"net"
@@ -24,6 +25,11 @@ const (
 	ntpPacketSize  = 48
 )
 
+var protocolToGauge = map[string]float64{
+	"ip4": 4,
+	"ip6": 6,
+}
+
 type ntpSample struct {
 	DriftSeconds              float64
 	RTTSeconds                float64
@@ -38,7 +44,18 @@ type ntpSample struct {
 	ReferenceID               string
 }
 
-func ProbeNTP(ctx context.Context, target string, module config.Module, registry *prometheus.Registry, logger log.Logger) bool {
+type customNTPRunner struct{}
+
+func (r customNTPRunner) Run(ctx context.Context, module ModuleDef, target string, registry *prometheus.Registry, logger log.Logger) bool {
+	upstreamModule, ok := upstreamModuleFromDef(module)
+	if !ok {
+		return false
+	}
+
+	return probeNTP(ctx, target, upstreamModule, registry, logger)
+}
+
+func probeNTP(ctx context.Context, target string, module bec.Module, registry *prometheus.Registry, logger log.Logger) bool {
 	buildInfo := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "ntp_build_info",
 		Help: "Build information for the embedded NTP probe.",
@@ -137,7 +154,7 @@ func ProbeNTP(ctx context.Context, target string, module config.Module, registry
 	return true
 }
 
-func collectNTPSample(ctx context.Context, target string, module config.Module, registry *prometheus.Registry, logger log.Logger) (ntpSample, error) {
+func collectNTPSample(ctx context.Context, target string, module bec.Module, registry *prometheus.Registry, logger log.Logger) (ntpSample, error) {
 	targetHost, targetPort := splitNTPAddress(target)
 	ip, _, err := chooseProtocol(ctx, module.NTP.IPProtocol, module.NTP.IPProtocolFallback, targetHost, registry, logger)
 	if err != nil {
@@ -173,7 +190,7 @@ func collectNTPSample(ctx context.Context, target string, module config.Module, 
 	return best, nil
 }
 
-func queryNTP(ctx context.Context, ip *net.IPAddr, targetHost, targetPort string, module config.Module, logger log.Logger) (ntpSample, error) {
+func queryNTP(ctx context.Context, ip *net.IPAddr, targetHost, targetPort string, module bec.Module, logger log.Logger) (ntpSample, error) {
 	network := "udp4"
 	if ip.IP.To4() == nil {
 		network = "udp6"
@@ -303,4 +320,128 @@ func parseReferenceID(src []byte, stratum int, version int) string {
 		return net.IP(src).String()
 	}
 	return fmt.Sprintf("%08x", binary.BigEndian.Uint32(src))
+}
+
+func chooseProtocol(ctx context.Context, ipProtocol string, fallbackIPProtocol bool, target string, registry *prometheus.Registry, logger log.Logger) (ip *net.IPAddr, lookupTime float64, err error) {
+	var fallbackProtocol string
+	probeDNSLookupTimeSeconds := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "probe_dns_lookup_time_seconds",
+		Help: "Returns the time taken for probe dns lookup in seconds",
+	})
+
+	probeIPProtocolGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "probe_ip_protocol",
+		Help: "Specifies whether probe ip protocol is IP4 or IP6",
+	})
+
+	probeIPAddrHash := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "probe_ip_addr_hash",
+		Help: "Specifies the hash of IP address. It's useful to detect if the IP address changes.",
+	})
+	registry.MustRegister(probeIPProtocolGauge)
+	registry.MustRegister(probeDNSLookupTimeSeconds)
+	registry.MustRegister(probeIPAddrHash)
+
+	if ipProtocol == "ip6" || ipProtocol == "" {
+		ipProtocol = "ip6"
+		fallbackProtocol = "ip4"
+	} else {
+		ipProtocol = "ip4"
+		fallbackProtocol = "ip6"
+	}
+
+	level.Info(logger).Log("msg", "Resolving target address", "target", target, "ip_protocol", ipProtocol)
+	resolveStart := time.Now()
+
+	defer func() {
+		lookupTime = time.Since(resolveStart).Seconds()
+		probeDNSLookupTimeSeconds.Add(lookupTime)
+	}()
+
+	resolver := &net.Resolver{}
+	if literal := net.ParseIP(target); literal != nil {
+		ipAddr := &net.IPAddr{IP: literal}
+		switch {
+		case ipProtocol == "ip4" && literal.To4() != nil:
+			probeIPProtocolGauge.Set(4)
+		case ipProtocol == "ip6" && literal.To4() == nil:
+			probeIPProtocolGauge.Set(6)
+		case fallbackIPProtocol:
+			if literal.To4() != nil {
+				probeIPProtocolGauge.Set(4)
+			} else {
+				probeIPProtocolGauge.Set(6)
+			}
+		default:
+			return nil, 0.0, fmt.Errorf("unable to find ip; no fallback")
+		}
+		probeIPAddrHash.Set(ipHash(literal))
+		level.Info(logger).Log("msg", "Using literal target address", "target", target, "ip", literal.String())
+		return ipAddr, lookupTime, nil
+	}
+
+	if !fallbackIPProtocol {
+		ips, err := resolver.LookupIP(ctx, ipProtocol, target)
+		if err == nil {
+			for _, ip := range ips {
+				level.Info(logger).Log("msg", "Resolved target address", "target", target, "ip", ip.String())
+				probeIPProtocolGauge.Set(protocolToGauge[ipProtocol])
+				probeIPAddrHash.Set(ipHash(ip))
+				return &net.IPAddr{IP: ip}, lookupTime, nil
+			}
+		}
+		level.Error(logger).Log("msg", "Resolution with IP protocol failed", "target", target, "ip_protocol", ipProtocol, "err", err)
+		return nil, 0.0, err
+	}
+
+	ips, err := resolver.LookupIPAddr(ctx, target)
+	if err != nil {
+		level.Error(logger).Log("msg", "Resolution with IP protocol failed", "target", target, "err", err)
+		return nil, 0.0, err
+	}
+
+	var fallback *net.IPAddr
+	for _, ip := range ips {
+		switch ipProtocol {
+		case "ip4":
+			if ip.IP.To4() != nil {
+				level.Info(logger).Log("msg", "Resolved target address", "target", target, "ip", ip.String())
+				probeIPProtocolGauge.Set(4)
+				probeIPAddrHash.Set(ipHash(ip.IP))
+				return &ip, lookupTime, nil
+			}
+			fallback = &ip
+		case "ip6":
+			if ip.IP.To4() == nil {
+				level.Info(logger).Log("msg", "Resolved target address", "target", target, "ip", ip.String())
+				probeIPProtocolGauge.Set(6)
+				probeIPAddrHash.Set(ipHash(ip.IP))
+				return &ip, lookupTime, nil
+			}
+			fallback = &ip
+		}
+	}
+
+	if fallback == nil || !fallbackIPProtocol {
+		return nil, 0.0, fmt.Errorf("unable to find ip; no fallback")
+	}
+
+	if fallbackProtocol == "ip4" {
+		probeIPProtocolGauge.Set(4)
+	} else {
+		probeIPProtocolGauge.Set(6)
+	}
+	probeIPAddrHash.Set(ipHash(fallback.IP))
+	level.Info(logger).Log("msg", "Resolved target address", "target", target, "ip", fallback.String())
+	return fallback, lookupTime, nil
+}
+
+func ipHash(ip net.IP) float64 {
+	h := fnv.New32a()
+	if ip.To4() != nil {
+		h.Write(ip.To4())
+	} else {
+		h.Write(ip.To16())
+	}
+	return float64(h.Sum32())
 }

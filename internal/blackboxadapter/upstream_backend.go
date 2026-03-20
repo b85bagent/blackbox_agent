@@ -32,7 +32,7 @@ func (b *UpstreamBackend) DefaultRegistry() ProberRegistry {
 	registry.Register("icmp", upstreamProbeRunner{probeFn: bep.ProbeICMP})
 	registry.Register("dns", upstreamProbeRunner{probeFn: bep.ProbeDNS})
 	registry.Register("grpc", upstreamProbeRunner{probeFn: bep.ProbeGRPC})
-	registry.Register("ntp", upstreamProbeRunner{probeFn: bep.ProbeNTP})
+	registry.Register("ntp", customNTPRunner{})
 
 	return registry
 }

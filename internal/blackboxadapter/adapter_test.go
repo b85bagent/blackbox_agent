@@ -70,3 +70,17 @@ func TestUpstreamBackendDefaultRegistry(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultRegistryUsesCustomNTPRunner(t *testing.T) {
+	backend := NewUpstreamBackend(prometheus.NewRegistry(), log.NewNopLogger())
+	registry := backend.DefaultRegistry()
+
+	runner, ok := registry.Get("ntp")
+	if !ok {
+		t.Fatal("expected ntp runner")
+	}
+
+	if _, ok := runner.(customNTPRunner); !ok {
+		t.Fatalf("expected customNTPRunner, got %T", runner)
+	}
+}
