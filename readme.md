@@ -128,7 +128,9 @@ scrape_configs:
 - [model](/home/systexadmin/blackbox_agent/model)
   - OpenSearch 與 Prometheus remote write
 - [blackbox_exporter](/home/systexadmin/blackbox_agent/blackbox_exporter)
-  - blackbox probe 實作與 config
+  - 保留中的 blackbox YAML、example 與 runtime 相關資產
+- [internal/blackboxadapter](/home/systexadmin/blackbox_agent/internal/blackboxadapter)
+  - blackbox backend adapter、官方 upstream 整合與 custom NTP probe
 - [yaml](/home/systexadmin/blackbox_agent/yaml)
   - config/target 樣板與本地設定
 - [MDS](/home/systexadmin/blackbox_agent/MDS)

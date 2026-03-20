@@ -352,6 +352,11 @@ type BackendAdapter interface {
 - 移除不再使用的 `blackbox_exporter/prober/*.go`
 - 保留樣板 YAML 與必要測試資產
 
+狀態：
+
+- 已完成移除 embedded `config/` 與 `prober/` 原始碼
+- `blackbox_exporter/` 目前只保留 YAML 樣板與 runtime 需要的檔案
+
 驗證：
 
 - 全量驗證同 PR4

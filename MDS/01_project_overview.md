@@ -44,5 +44,5 @@
 - `exporter/`: probe 執行與 metrics 收集
 - `internal/blackboxadapter/`: blackbox backend adapter、config 分流、custom NTP probe
 - `model/`: OpenSearch 與 Prometheus remote write
-- `blackbox_exporter/`: 本地保留的 blackbox YAML 樣板與尚待清理的 fork 資產
+- `blackbox_exporter/`: 本地保留的 blackbox YAML 樣板與 runtime YAML 資產
 - `yaml/`: 本地設定檔樣板與實際目標檔

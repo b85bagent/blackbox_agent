@@ -138,6 +138,18 @@ flowchart TD
 - 收集 probe 結果與 metrics
 - 分流官方 blackbox config 與自定義 `ntp` config
 
+### YAML 資產層
+
+- `blackbox_exporter/blackbox.yaml`
+- `blackbox_exporter/blackbox_example.yaml`
+- `blackbox_exporter/blackbox_error.yaml`
+
+用途：
+
+- 保留本地 module 設定檔與樣板
+- 提供 reload 與錯誤落盤使用
+- 不再承載 blackbox runtime source code
+
 ### 設定更新層
 
 - `handler/mq.go`
