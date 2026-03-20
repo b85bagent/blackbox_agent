@@ -50,7 +50,9 @@
 - `handler/yaml_check`
   - 驗證 target 與 blackbox module 的 YAML 格式
 - `blackbox_exporter`
-  - 內含 blackbox config 與 probe 邏輯，類似 vendor/內嵌整合層
+  - 保留 blackbox module YAML、example 與錯誤落盤檔案
+  - 由 `internal/blackboxadapter` 載入後分流成官方 blackbox config 與專案自有 `ntp` config
+  - 不再承載 blackbox runtime source code
 
 ## 設定檔角色
 

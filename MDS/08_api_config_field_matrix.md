@@ -14,6 +14,12 @@
 
 若三者不一致，會在備註欄直接標明。
 
+補充：
+
+- `blackbox_exporter/blackbox.yaml` 仍是單一設定檔入口
+- 載入時由 `internal/blackboxadapter` 先抽出 `prober: ntp` 的 `ntp:` 區塊
+- 清洗後的 YAML 才會交給官方 `github.com/prometheus/blackbox_exporter/config` 解析
+
 ## 1. config.yaml
 
 檔案用途：定義外部系統連線資訊與執行常數。
@@ -335,7 +341,7 @@ scrape_configs:
 | reload 行為 | MQ reload 後固定重新讀 `target.yaml` 與 `blackbox.yaml` |
 | `http_server_port` | 設定檔有欄位，但目前未見主流程實際啟動 HTTP server |
 | `output.txt` | metrics 處理流程目前會產生本地 `output.txt` |
-| 欄位完整度 | `blackbox.yaml` 真正可用欄位還受內嵌 blackbox exporter 行為影響，本表以專案內驗證器與樣板為主 |
+| 欄位完整度 | `blackbox.yaml` 真正可用欄位受官方 blackbox_exporter schema 與 adapter 自定義 `ntp` 分流邏輯共同影響，本表以專案內驗證器與樣板為主 |
 
 ## 5. 建議使用方式
 
@@ -347,4 +353,3 @@ scrape_configs:
   - `exporter/handler.go`
   - `handler/yaml_check/module/*`
   - `handler/yaml_check/target/*`
-

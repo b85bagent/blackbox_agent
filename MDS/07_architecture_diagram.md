@@ -148,6 +148,7 @@ flowchart TD
 
 - 保留本地 module 設定檔與樣板
 - 提供 reload 與錯誤落盤使用
+- 作為單一 `blackbox.yaml` 來源，交由 adapter 分流成 upstream module 與自定義 `ntp` 設定
 - 不再承載 blackbox runtime source code
 
 ### 設定更新層
