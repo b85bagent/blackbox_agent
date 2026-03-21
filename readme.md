@@ -2,12 +2,12 @@
 
 `blackbox_agent` 是一個以 Go 撰寫的黑箱探測代理程式。它會讀取本地 YAML 設定，定期對指定 target 執行 probe，並把結果送到 Prometheus Remote Write 與 OpenSearch；同時也支援透過 RabbitMQ RPC 熱更新 target 與 module 設定。
 
-如果你是第一次接手這個專案，先看這份 README，再看 [AGENTS.md](/home/systexadmin/blackbox_agent/AGENTS.md) 與 [07_architecture_diagram.md](/home/systexadmin/blackbox_agent/MDS/07_architecture_diagram.md)。
+如果你是第一次接手這個專案，先看這份 README，再看 [AGENTS.md](/home/systexadmin/blackbox_agent/AGENTS.md) 與 [07_architecture_diagram.md](/home/systexadmin/blackbox_agent/mds/07_architecture_diagram.md)。
 
 ## 專案能做什麼
 
 - 依 `target.yaml` 定義定期對 target 做 blackbox probe
-- 支援 `http`、`tcp`、`icmp`、`dns`、`grpc` 五種 prober
+- 支援 `http`、`tcp`、`icmp`、`dns`、`grpc`、`ntp` 六種 prober
 - 將 probe 指標轉成 Prometheus remote write 格式推送
 - 視設定將 probe 結果寫入 OpenSearch
 - 透過 RabbitMQ RPC 接收新的 YAML 設定並觸發 reload
@@ -111,7 +111,28 @@ scrape_configs:
 
 ### blackbox.yaml
 
-用途：定義 module 與其 prober 細節，例如 timeout、http/tcp/dns 子設定。
+用途：定義 module 與其 prober 細節，例如 timeout、http/tcp/dns/grpc/ntp 子設定。
+
+`blackbox_exporter v0.28.0` 已開放本專案可使用的新增欄位：
+
+- `http.enable_http3`
+- `grpc.metadata`
+- `tcp.query_response.expect_bytes`
+
+`grpc.metadata` 需使用 `map[string][]string` 結構，例如：
+
+```yaml
+modules:
+  grpc_with_metadata:
+    prober: grpc
+    grpc:
+      tls: true
+      metadata:
+        authorization:
+          - Bearer test-token
+        x-tenant-id:
+          - tenant-a
+```
 
 ## 核心目錄
 
@@ -133,17 +154,17 @@ scrape_configs:
   - blackbox backend adapter、官方 upstream 整合與 custom NTP probe
 - [yaml](/home/systexadmin/blackbox_agent/yaml)
   - config/target 樣板與本地設定
-- [MDS](/home/systexadmin/blackbox_agent/MDS)
+- [mds](/home/systexadmin/blackbox_agent/mds)
   - 專案說明文件
 
 ## 新人建議閱讀順序
 
 1. [readme.md](/home/systexadmin/blackbox_agent/readme.md)
 2. [AGENTS.md](/home/systexadmin/blackbox_agent/AGENTS.md)
-3. [02_bootstrap_and_runtime.md](/home/systexadmin/blackbox_agent/MDS/02_bootstrap_and_runtime.md)
-4. [03_probe_pipeline.md](/home/systexadmin/blackbox_agent/MDS/03_probe_pipeline.md)
-5. [04_mq_reload_and_yaml_validation.md](/home/systexadmin/blackbox_agent/MDS/04_mq_reload_and_yaml_validation.md)
-6. [07_architecture_diagram.md](/home/systexadmin/blackbox_agent/MDS/07_architecture_diagram.md)
+3. [02_bootstrap_and_runtime.md](/home/systexadmin/blackbox_agent/mds/02_bootstrap_and_runtime.md)
+4. [03_probe_pipeline.md](/home/systexadmin/blackbox_agent/mds/03_probe_pipeline.md)
+5. [04_mq_reload_and_yaml_validation.md](/home/systexadmin/blackbox_agent/mds/04_mq_reload_and_yaml_validation.md)
+6. [07_architecture_diagram.md](/home/systexadmin/blackbox_agent/mds/07_architecture_diagram.md)
 
 ## 開發與維運注意事項
 
@@ -156,11 +177,11 @@ scrape_configs:
 ## 文件索引
 
 - [AGENTS.md](/home/systexadmin/blackbox_agent/AGENTS.md)
-- [01_project_overview.md](/home/systexadmin/blackbox_agent/MDS/01_project_overview.md)
-- [02_bootstrap_and_runtime.md](/home/systexadmin/blackbox_agent/MDS/02_bootstrap_and_runtime.md)
-- [03_probe_pipeline.md](/home/systexadmin/blackbox_agent/MDS/03_probe_pipeline.md)
-- [04_mq_reload_and_yaml_validation.md](/home/systexadmin/blackbox_agent/MDS/04_mq_reload_and_yaml_validation.md)
-- [05_configuration_reference.md](/home/systexadmin/blackbox_agent/MDS/05_configuration_reference.md)
-- [06_outputs_and_integrations.md](/home/systexadmin/blackbox_agent/MDS/06_outputs_and_integrations.md)
-- [07_architecture_diagram.md](/home/systexadmin/blackbox_agent/MDS/07_architecture_diagram.md)
-- [08_api_config_field_matrix.md](/home/systexadmin/blackbox_agent/MDS/08_api_config_field_matrix.md)
+- [01_project_overview.md](/home/systexadmin/blackbox_agent/mds/01_project_overview.md)
+- [02_bootstrap_and_runtime.md](/home/systexadmin/blackbox_agent/mds/02_bootstrap_and_runtime.md)
+- [03_probe_pipeline.md](/home/systexadmin/blackbox_agent/mds/03_probe_pipeline.md)
+- [04_mq_reload_and_yaml_validation.md](/home/systexadmin/blackbox_agent/mds/04_mq_reload_and_yaml_validation.md)
+- [05_configuration_reference.md](/home/systexadmin/blackbox_agent/mds/05_configuration_reference.md)
+- [06_outputs_and_integrations.md](/home/systexadmin/blackbox_agent/mds/06_outputs_and_integrations.md)
+- [07_architecture_diagram.md](/home/systexadmin/blackbox_agent/mds/07_architecture_diagram.md)
+- [08_api_config_field_matrix.md](/home/systexadmin/blackbox_agent/mds/08_api_config_field_matrix.md)

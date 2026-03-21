@@ -3,185 +3,236 @@ package module
 import (
 	"errors"
 	"log"
+	"strings"
 	"time"
 )
 
 func validateHTTPModule(httpConfigCheck map[string]interface{}, moduleName string) (bool, error) {
-
 	httpConfig, ok := httpConfigCheck["http"].(map[interface{}]interface{})
 	if !ok {
 		log.Println(httpConfigCheck)
 		return false, errors.New("HTTP_prober_name error in [" + moduleName + "]")
 	}
 
-	if timeout, ok := httpConfig["timeout"]; ok {
-		if _, err := time.ParseDuration(timeout.(string)); err != nil {
+	if timeout, ok := httpConfigCheck["timeout"]; ok {
+		timeoutString, ok := timeout.(string)
+		if !ok {
+			return false, errors.New("HTTP_timeout must be a string in [" + moduleName + "]")
+		}
+		if _, err := time.ParseDuration(timeoutString); err != nil {
 			return false, errors.New("HTTP_timeout must be a string in [" + moduleName + "]")
 		}
 	}
 
-	if httpParams, ok := httpConfig["http"].(map[interface{}]interface{}); ok {
-		if validHTTPVersions, ok := httpParams["valid_http_versions"].([]interface{}); ok {
-			for _, version := range validHTTPVersions {
-				if _, ok := version.(string); !ok {
-					return false, errors.New("HTTP_valid_http_versions_data must be a string in [" + moduleName + "]")
-				}
+	if validHTTPVersions, ok := httpConfig["valid_http_versions"]; ok {
+		if err := validateStringSlice(validHTTPVersions, "HTTP_valid_http_versions_data must be a string in ["+moduleName+"]"); err != nil {
+			return false, err
+		}
+	}
+
+	if validStatusCodes, ok := httpConfig["valid_status_codes"]; ok {
+		if err := validateIntSlice(validStatusCodes, "HTTP_valid_status_codes must be a int in ["+moduleName+"]"); err != nil {
+			return false, err
+		}
+	}
+
+	if method, ok := httpConfig["method"]; ok {
+		methodString, ok := method.(string)
+		if !ok {
+			return false, errors.New("HTTP_method must be one of GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS in [" + moduleName + "]")
+		}
+		validMethods := []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
+		if !contains(validMethods, strings.ToUpper(methodString)) {
+			return false, errors.New("HTTP_method must be one of GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS in [" + moduleName + "]")
+		}
+	}
+
+	if headers, ok := httpConfig["headers"]; ok {
+		headersMap, ok := headers.(map[interface{}]interface{})
+		if !ok {
+			return false, errors.New("HTTP_headers must be a map of strings in [" + moduleName + "]")
+		}
+		for _, value := range headersMap {
+			if _, ok := value.(string); !ok {
+				return false, errors.New("HTTP_headers must be a map of strings in [" + moduleName + "]")
 			}
 		}
+	}
 
-		if validStatusCodes, ok := httpParams["valid_status_codes"].([]interface{}); ok {
-			for _, code := range validStatusCodes {
-				if _, ok := code.(int); !ok {
-					return false, errors.New("HTTP_valid_status_codes must be a int in [" + moduleName + "]")
-				}
-			}
+	if err := validateOptionalBool(httpConfig, "follow_redirects", "HTTP_follow_redirects must be a boolean in ["+moduleName+"]"); err != nil {
+		return false, err
+	}
+
+	if err := validateOptionalBool(httpConfig, "fail_if_ssl", "HTTP_fail_if_ssl must be a boolean in ["+moduleName+"]"); err != nil {
+		return false, err
+	}
+
+	if err := validateOptionalBool(httpConfig, "fail_if_not_ssl", "HTTP_fail_if_not_ssl must be a boolean in ["+moduleName+"]"); err != nil {
+		return false, err
+	}
+
+	if failIfBodyMatchesRegexp, ok := httpConfig["fail_if_body_matches_regexp"]; ok {
+		if err := validateStringSlice(failIfBodyMatchesRegexp, "HTTP_each item in fail_if_body_matches_regexp must be a string in ["+moduleName+"]"); err != nil {
+			return false, err
 		}
+	}
 
-		if method, ok := httpParams["method"].(string); ok {
-			validMethods := []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
-			if !contains(validMethods, method) {
-				return false, errors.New("HTTP_method must be one of GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS in [" + moduleName + "]")
-			}
+	if failIfBodyNotMatchesRegexp, ok := httpConfig["fail_if_body_not_matches_regexp"]; ok {
+		if err := validateStringSlice(failIfBodyNotMatchesRegexp, "HTTP_each item in fail_if_body_not_matches_regexp must be a string in ["+moduleName+"]"); err != nil {
+			return false, err
 		}
+	}
 
-		if headers, ok := httpParams["headers"].(map[interface{}]interface{}); ok {
-			for _, value := range headers {
-				if _, ok := value.(string); !ok {
-					return false, errors.New("HTTP_headers must be a map of strings in [" + moduleName + "]")
-				}
-			}
+	if failIfHeaderMatches, ok := httpConfig["fail_if_header_matches"]; ok {
+		if err := validateHeaderMatches(failIfHeaderMatches, moduleName, "HTTP_each item in fail_if_header_matches must be a map in ["); err != nil {
+			return false, err
 		}
+	}
 
-		if _, ok := httpParams["follow_redirects"].(bool); !ok {
-			return false, errors.New("HTTP_follow_redirects must be a boolean in [" + moduleName + "]")
+	if failIfHeaderNotMatches, ok := httpConfig["fail_if_header_not_matches"]; ok {
+		if err := validateHeaderMatches(failIfHeaderNotMatches, moduleName, "HTTP_each item in fail_if_header_not_matches must be a map in ["); err != nil {
+			return false, err
 		}
+	}
 
-		if _, ok := httpParams["fail_if_ssl"].(bool); !ok {
-			return false, errors.New("HTTP_fail_if_ssl must be a boolean in [" + moduleName + "]")
+	if value, ok := httpConfig["tls_config"]; ok {
+		tlsConfig, ok := value.(map[interface{}]interface{})
+		if !ok {
+			return false, errors.New("HTTP_tls_config must be a map in [" + moduleName + "]")
 		}
-
-		if _, ok := httpParams["fail_if_not_ssl"].(bool); !ok {
-			return false, errors.New("HTTP_fail_if_not_ssl must be a boolean in [" + moduleName + "]")
+		if valid, err := validateTLSConfig(tlsConfig); !valid {
+			return false, err
 		}
+	}
 
-		if failIfBodyMatchesRegexp, ok := httpParams["fail_if_body_matches_regexp"].([]interface{}); ok {
-			for _, regexp := range failIfBodyMatchesRegexp {
-				if _, ok := regexp.(string); !ok {
-					return false, errors.New("HTTP_each item in fail_if_body_matches_regexp must be a string in [" + moduleName + "]")
-				}
-			}
+	if basicAuth, ok := httpConfig["basic_auth"]; ok {
+		basicAuthConfig, ok := basicAuth.(map[interface{}]interface{})
+		if !ok {
+			return false, errors.New("HTTP_basic_auth must be a map in [" + moduleName + "]")
 		}
-
-		if failIfBodyNotMatchesRegexp, ok := httpParams["fail_if_body_not_matches_regexp"].([]interface{}); ok {
-			for _, regexp := range failIfBodyNotMatchesRegexp {
-				if _, ok := regexp.(string); !ok {
-					return false, errors.New("HTTP_each item in fail_if_body_not_matches_regexp must be a string in [" + moduleName + "]")
-				}
-			}
+		if _, ok := basicAuthConfig["username"].(string); !ok {
+			return false, errors.New("HTTP_username in basic_auth must be a string in [" + moduleName + "]")
 		}
-
-		if failIfHeaderMatches, ok := httpParams["fail_if_header_matches"].([]interface{}); ok {
-			for _, matchSpec := range failIfHeaderMatches {
-				if _, ok := matchSpec.(map[interface{}]interface{}); !ok {
-					return false, errors.New("HTTP_each item in fail_if_header_matches must be a map in [" + moduleName + "]")
-				}
-			}
+		if _, ok := basicAuthConfig["password"].(string); !ok {
+			return false, errors.New("HTTP_password in basic_auth must be a string in [" + moduleName + "]")
 		}
+	}
 
-		if failIfHeaderNotMatches, ok := httpParams["fail_if_header_not_matches"].([]interface{}); ok {
-			for _, matchSpec := range failIfHeaderNotMatches {
-				if _, ok := matchSpec.(map[interface{}]interface{}); !ok {
-					return false, errors.New("HTTP_each item in fail_if_header_not_matches must be a map in [" + moduleName + "]")
-				}
-			}
+	if authorization, ok := httpConfig["authorization"]; ok {
+		authorizationConfig, ok := authorization.(map[interface{}]interface{})
+		if !ok {
+			return false, errors.New("HTTP_authorization must be a map in [" + moduleName + "]")
 		}
-
-		if value, ok := httpParams["tls_config"]; ok {
-			tlsConfig, ok := value.(map[interface{}]interface{})
-			if !ok {
-				return false, errors.New("HTTP_tls_config must be a map in [" + moduleName + "]")
-			}
-			if valid, err := validateTLSConfig(tlsConfig); !valid {
-				return false, err
-			}
-		}
-
-		if basicAuth, ok := httpParams["basic_auth"].(map[interface{}]interface{}); ok {
-			if _, ok := basicAuth["username"].(string); !ok {
-				return false, errors.New("HTTP_username in basic_auth must be a string in [" + moduleName + "]")
-			}
-			if _, ok := basicAuth["password"].(string); !ok {
-				return false, errors.New("HTTP_password in basic_auth must be a string in [" + moduleName + "]")
-			}
-		}
-
-		if authorization, ok := httpParams["authorization"].(map[interface{}]interface{}); ok {
-			if _, ok := authorization["type"].(string); !ok {
+		if value, exists := authorizationConfig["type"]; exists {
+			if _, ok := value.(string); !ok {
 				return false, errors.New("HTTP_type in authorization must be a string in [" + moduleName + "]")
 			}
-			if _, ok := authorization["credentials"].(string); !ok {
+		}
+		if value, exists := authorizationConfig["credentials"]; exists {
+			if _, ok := value.(string); !ok {
 				return false, errors.New("HTTP_credentials in authorization must be a string in [" + moduleName + "]")
 			}
-			if _, ok := authorization["credentials_file"].(string); !ok {
+		}
+		if value, exists := authorizationConfig["credentials_file"]; exists {
+			if _, ok := value.(string); !ok {
 				return false, errors.New("HTTP_credentials_file in authorization must be a string in [" + moduleName + "]")
 			}
 		}
+	}
 
-		if proxyURL, ok := httpParams["proxy_url"].(string); ok && proxyURL == "" {
+	if proxyURL, ok := httpConfig["proxy_url"]; ok {
+		proxyURLString, ok := proxyURL.(string)
+		if !ok || proxyURLString == "" {
 			return false, errors.New("HTTP_proxy_url must be a non-empty string in [" + moduleName + "]")
 		}
+	}
 
-		if noProxy, ok := httpParams["no_proxy"].(string); ok && noProxy == "" {
+	if noProxy, ok := httpConfig["no_proxy"]; ok {
+		noProxyString, ok := noProxy.(string)
+		if !ok || noProxyString == "" {
 			return false, errors.New("HTTP_no_proxy must be a non-empty string in [" + moduleName + "]")
 		}
+	}
 
-		if _, ok := httpParams["proxy_from_environment"].(bool); !ok {
-			return false, errors.New("HTTP_proxy_from_environment must be a boolean in [" + moduleName + "]")
+	if err := validateOptionalBool(httpConfig, "proxy_from_environment", "HTTP_proxy_from_environment must be a boolean in ["+moduleName+"]"); err != nil {
+		return false, err
+	}
+
+	if proxyConnectHeaders, ok := httpConfig["proxy_connect_headers"]; ok {
+		headersMap, ok := proxyConnectHeaders.(map[interface{}]interface{})
+		if !ok {
+			return false, errors.New("HTTP_proxy_connect_headers must be a map of strings in [" + moduleName + "]")
 		}
-
-		if proxyConnectHeaders, ok := httpParams["proxy_connect_headers"].(map[interface{}]interface{}); ok {
-			for _, value := range proxyConnectHeaders {
-				if _, ok := value.(string); !ok {
-					return false, errors.New("HTTP_each value in proxy_connect_headers must be a string in [" + moduleName + "]")
-				}
+		for _, value := range headersMap {
+			if _, ok := value.(string); !ok {
+				return false, errors.New("HTTP_each value in proxy_connect_headers must be a string in [" + moduleName + "]")
 			}
 		}
+	}
 
-		if _, ok := httpParams["skip_resolve_phase_with_proxy"].(bool); !ok {
-			return false, errors.New("HTTP_skip_resolve_phase_with_proxy must be a boolean in [" + moduleName + "]")
+	if err := validateOptionalBool(httpConfig, "skip_resolve_phase_with_proxy", "HTTP_skip_resolve_phase_with_proxy must be a boolean in ["+moduleName+"]"); err != nil {
+		return false, err
+	}
+
+	if oauth2, ok := httpConfig["oauth2"]; ok {
+		oauth2Config, ok := oauth2.(map[interface{}]interface{})
+		if !ok {
+			return false, errors.New("HTTP_oauth2 must be a map in [" + moduleName + "]")
 		}
-
-		if oauth2, ok := httpParams["oauth2"].(map[interface{}]interface{}); ok {
-
-			if valid, err := validateOAuth2Config(oauth2); !valid {
-				return false, err
-			}
-
+		if valid, err := validateOAuth2Config(oauth2Config); !valid {
+			return false, err
 		}
+	}
 
-		if _, ok := httpParams["enable_http2"].(bool); !ok {
-			return false, errors.New("HTTP_enable_http2 must be a boolean in [" + moduleName + "]")
+	if err := validateOptionalBool(httpConfig, "enable_http2", "HTTP_enable_http2 must be a boolean in ["+moduleName+"]"); err != nil {
+		return false, err
+	}
+
+	if err := validateOptionalBool(httpConfig, "enable_http3", "HTTP_enable_http3 must be a boolean in ["+moduleName+"]"); err != nil {
+		return false, err
+	}
+
+	if preferredIPProtocol, ok := httpConfig["preferred_ip_protocol"]; ok {
+		preferredIPProtocolString, ok := preferredIPProtocol.(string)
+		if !ok {
+			return false, errors.New("HTTP_preferred_ip_protocol must be one of ip4, ip6 in [" + moduleName + "]")
 		}
-
-		if preferredIPProtocol, ok := httpParams["preferred_ip_protocol"].(string); ok {
-			validProtocols := []string{"ip4", "ip6"}
-			if !contains(validProtocols, preferredIPProtocol) {
-				return false, errors.New("HTTP_preferred_ip_protocol must be one of ip4, ip6 in [" + moduleName + "]")
-			}
+		validProtocols := []string{"ip4", "ip6"}
+		if !contains(validProtocols, preferredIPProtocolString) {
+			return false, errors.New("HTTP_preferred_ip_protocol must be one of ip4, ip6 in [" + moduleName + "]")
 		}
+	}
 
-		if _, ok := httpParams["ip_protocol_fallback"].(bool); !ok {
-			return false, errors.New("HTTP_ip_protocol_fallback must be a boolean in [" + moduleName + "]")
-		}
+	if err := validateOptionalBool(httpConfig, "ip_protocol_fallback", "HTTP_ip_protocol_fallback must be a boolean in ["+moduleName+"]"); err != nil {
+		return false, err
+	}
 
-		if body, ok := httpParams["body"].(string); ok && body == "" {
+	if body, ok := httpConfig["body"]; ok {
+		bodyString, ok := body.(string)
+		if !ok || bodyString == "" {
 			return false, errors.New("HTTP_body must be a non-empty string in [" + moduleName + "]")
 		}
+	}
 
-		if bodyFile, ok := httpParams["body_file"].(string); ok && bodyFile == "" {
+	if bodyFile, ok := httpConfig["body_file"]; ok {
+		bodyFileString, ok := bodyFile.(string)
+		if !ok || bodyFileString == "" {
 			return false, errors.New("HTTP_body_file must be a non-empty string in [" + moduleName + "]")
 		}
+	}
 
+	if compression, ok := httpConfig["compression"]; ok {
+		if _, ok := compression.(string); !ok {
+			return false, errors.New("HTTP_compression must be a string in [" + moduleName + "]")
+		}
+	}
+
+	if bodySizeLimit, ok := httpConfig["body_size_limit"]; ok {
+		switch bodySizeLimit.(type) {
+		case int, int64, uint64, float64, string:
+		default:
+			return false, errors.New("HTTP_body_size_limit must be a string or number in [" + moduleName + "]")
+		}
 	}
 
 	return true, nil
@@ -194,6 +245,70 @@ func contains(slice []string, element string) bool {
 		}
 	}
 	return false
+}
+
+func validateOptionalBool(config map[interface{}]interface{}, key, errMessage string) error {
+	if value, ok := config[key]; ok {
+		if _, ok := value.(bool); !ok {
+			return errors.New(errMessage)
+		}
+	}
+	return nil
+}
+
+func validateStringSlice(value interface{}, errMessage string) error {
+	values, ok := value.([]interface{})
+	if !ok {
+		return errors.New(errMessage)
+	}
+	for _, item := range values {
+		if _, ok := item.(string); !ok {
+			return errors.New(errMessage)
+		}
+	}
+	return nil
+}
+
+func validateIntSlice(value interface{}, errMessage string) error {
+	values, ok := value.([]interface{})
+	if !ok {
+		return errors.New(errMessage)
+	}
+	for _, item := range values {
+		if _, ok := item.(int); !ok {
+			return errors.New(errMessage)
+		}
+	}
+	return nil
+}
+
+func validateHeaderMatches(value interface{}, moduleName, prefix string) error {
+	matchSpecs, ok := value.([]interface{})
+	if !ok {
+		return errors.New(prefix + moduleName + "]")
+	}
+	for _, matchSpec := range matchSpecs {
+		matchMap, ok := matchSpec.(map[interface{}]interface{})
+		if !ok {
+			return errors.New(prefix + moduleName + "]")
+		}
+		if header, exists := matchMap["header"]; exists {
+			if _, ok := header.(string); !ok {
+				return errors.New("HTTP_header in header match must be a string in [" + moduleName + "]")
+			}
+		}
+		if regexp, exists := matchMap["regexp"]; exists {
+			if _, ok := regexp.(string); !ok {
+				return errors.New("HTTP_regexp in header match must be a string in [" + moduleName + "]")
+			}
+		}
+		if allowMissing, exists := matchMap["allow_missing"]; exists {
+			if _, ok := allowMissing.(bool); !ok {
+				return errors.New("HTTP_allow_missing in header match must be a boolean in [" + moduleName + "]")
+			}
+		}
+	}
+	return nil
 }
 
 func validateTLSConfig(tlsConfig map[interface{}]interface{}) (bool, error) {

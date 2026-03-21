@@ -22,6 +22,7 @@ modules:
       body_size_limit: 0
       compression: gzip
       enable_http2: true
+      enable_http3: false
       fail_if_body_matches_regexp: [Could not connect to database]
       fail_if_body_not_matches_regexp: [Download the latest version here]
       fail_if_header_matches:
@@ -56,6 +57,11 @@ modules:
   Test_grpc:
     grpc:
       ip_protocol_fallback: true
+      metadata:
+        authorization:
+        - Bearer test-token
+        x-tenant-id:
+        - tenant-a
       preferred_ip_protocol: ip4
       service: 127.0.0.12
       tls: true
@@ -117,6 +123,7 @@ modules:
       preferred_ip_protocol: '0'
       query_response:
       - expect: '0'
+        expect_bytes: "\\x00\\x01"
         send: '0'
         starttls: true
       source_ip_address: '0'
