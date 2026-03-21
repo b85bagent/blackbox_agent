@@ -41,6 +41,24 @@ func validateGRPCConfig(grpcConfigCheck map[string]interface{}, moduleName strin
 		}
 	}
 
+	if value, ok := grpcConfig["metadata"]; ok {
+		metadataConfig, ok := value.(map[interface{}]interface{})
+		if !ok {
+			return false, errors.New("GRPC_metadata must be a map in [" + moduleName + "]")
+		}
+		for _, item := range metadataConfig {
+			values, ok := item.([]interface{})
+			if !ok {
+				return false, errors.New("GRPC_metadata values must be string lists in [" + moduleName + "]")
+			}
+			for _, metadataValue := range values {
+				if _, ok := metadataValue.(string); !ok {
+					return false, errors.New("GRPC_metadata values must be string lists in [" + moduleName + "]")
+				}
+			}
+		}
+	}
+
 	if value, ok := grpcConfig["tls_config"]; ok {
 		tlsConfig, ok := value.(map[interface{}]interface{})
 		if !ok {

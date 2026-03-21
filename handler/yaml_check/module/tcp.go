@@ -53,6 +53,11 @@ func validateTCPConfig(tcpConfigCheck map[string]interface{}, moduleName string)
 					return false, errors.New("TCP_expect in response must be a string in [" + moduleName + "]")
 				}
 			}
+			if value, ok := responseMap["expect_bytes"]; ok {
+				if _, ok := value.(string); !ok {
+					return false, errors.New("TCP_expect_bytes in response must be a string in [" + moduleName + "]")
+				}
+			}
 			// 验证 send 是 string
 			if value, ok := responseMap["send"]; ok {
 				if _, ok := value.(string); !ok {

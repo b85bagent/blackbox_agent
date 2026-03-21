@@ -5,19 +5,7 @@ import (
 	"log"
 	"time"
 
-	bep "blackbox_agent/blackbox_exporter/prober"
-
 	"github.com/prometheus/client_golang/prometheus"
-)
-
-var (
-	Probers = map[string]bep.ProbeFn{
-		"http": bep.ProbeHTTP,
-		"tcp":  bep.ProbeTCP,
-		"icmp": bep.ProbeICMP,
-		"dns":  bep.ProbeDNS,
-		"grpc": bep.ProbeGRPC,
-	}
 )
 
 type HostMonitor struct{}

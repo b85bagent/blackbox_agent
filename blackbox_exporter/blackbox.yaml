@@ -16,8 +16,27 @@ modules:
       service: service1
       tls: false
     prober: grpc
+  grpc_with_metadata:
+    grpc:
+      metadata:
+        authorization:
+        - Bearer example-token
+        x-tenant-id:
+        - demo
+      preferred_ip_protocol: ip4
+      tls: true
+    prober: grpc
+  ntp:
+    ntp:
+      high_drift_threshold: 10ms
+      measurement_duration: 30s
+      preferred_ip_protocol: ip4
+      protocol_version: 4
+    prober: ntp
+    timeout: 5s
   http_2xx:
     http:
+      enable_http3: false
       preferred_ip_protocol: ip4
     prober: http
     timeout: 30s
@@ -58,3 +77,8 @@ modules:
       - send: SSH-2.0-blackbox-ssh-check
   tcp_connect:
     prober: tcp
+  tcp_expect_bytes:
+    prober: tcp
+    tcp:
+      query_response:
+      - expect_bytes: "\u0000\u0001"

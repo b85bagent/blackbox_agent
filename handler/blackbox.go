@@ -4,6 +4,7 @@ import (
 	"blackbox_agent/exporter"
 	bCheck "blackbox_agent/handler/yaml_check/module"
 	tCheck "blackbox_agent/handler/yaml_check/target"
+	"blackbox_agent/internal/blackboxadapter"
 	"blackbox_agent/model"
 	"blackbox_agent/server"
 	"context"
@@ -11,8 +12,6 @@ import (
 	"os"
 	"sync"
 	"time"
-
-	bec "blackbox_agent/blackbox_exporter/config"
 
 	logger "github.com/go-kit/log"
 	"golang.org/x/sync/semaphore"
@@ -22,7 +21,9 @@ import (
 )
 
 var (
-	sc = bec.NewSafeConfig(prometheus.DefaultRegisterer)
+	blackboxBackend  = blackboxadapter.NewUpstreamBackend(prometheus.DefaultRegisterer, logger.NewNopLogger())
+	blackboxLoader   = blackboxBackend.NewLoader()
+	blackboxRegistry = blackboxBackend.DefaultRegistry()
 )
 
 // blackbox 進程
@@ -31,7 +32,7 @@ func BlackboxProcess(ctx context.Context, targetFile, blackboxFile string, first
 	// log.Println(targetFile, blackboxFile)
 
 	//讀取blackbox.yaml
-	sc, err := blackboxConfig(blackboxFile, first)
+	loader, err := blackboxConfig(blackboxFile, first)
 	if err != nil {
 		log.Printf("讀取blackbox配置文件錯誤: %v ，請用-h 確認指令以及符合的yaml格式", err)
 		panic("blackbox config init fail")
@@ -45,7 +46,7 @@ func BlackboxProcess(ctx context.Context, targetFile, blackboxFile string, first
 	}
 
 	//定時器設定
-	TimeControl(ctx, targetConfig, sc)
+	TimeControl(ctx, targetConfig, loader)
 }
 
 // 讀取Target Yaml檔轉成map
@@ -83,7 +84,7 @@ func targetConfig(targetFile string, first bool) (data map[string]interface{}, e
 }
 
 // 根據Job 建立定時器
-func TimeControl(ctx context.Context, data map[string]interface{}, sc *bec.SafeConfig) {
+func TimeControl(ctx context.Context, data map[string]interface{}, loader blackboxadapter.ConfigLoader) {
 
 	scrapeConfigs, ok := data["scrape_configs"].([]interface{})
 	if !ok {
@@ -117,10 +118,10 @@ func TimeControl(ctx context.Context, data map[string]interface{}, sc *bec.SafeC
 			continue
 		}
 
-		go func(ctx context.Context, config map[interface{}]interface{}, sc *bec.SafeConfig) {
+		go func(ctx context.Context, config map[interface{}]interface{}, loader blackboxadapter.ConfigLoader) {
 
 			//優先執行一次
-			dataResolve(config, sc)
+			dataResolve(config, loader)
 
 			// 建立定時器，定期執行工作
 			ticker := time.NewTicker(timeControl)
@@ -130,19 +131,19 @@ func TimeControl(ctx context.Context, data map[string]interface{}, sc *bec.SafeC
 				select {
 
 				case <-ticker.C:
-					dataResolve(config, sc)
+					dataResolve(config, loader)
 				case <-ctx.Done():
 
 					return
 				}
 			}
 
-		}(ctx, config, sc)
+		}(ctx, config, loader)
 	}
 }
 
 // 每個Job 解析yaml檔後做probe
-func dataResolve(config map[interface{}]interface{}, sc *bec.SafeConfig) {
+func dataResolve(config map[interface{}]interface{}, loader blackboxadapter.ConfigLoader) {
 
 	var (
 		wg     sync.WaitGroup
@@ -277,7 +278,7 @@ func dataResolve(config map[interface{}]interface{}, sc *bec.SafeConfig) {
 						}
 						doc["tags"] = tags
 					}
-					doc, errCMADP := exporter.CheckModuleAndDoProbe(module.(string), doc, targetStr, sc, labels, tags)
+					doc, errCMADP := exporter.CheckModuleAndDoProbe(module.(string), doc, targetStr, loader, blackboxRegistry, labels, tags)
 					if errCMADP != nil {
 						l.Printf("第 %d 個CheckModuleAndDoProbe failed: %e", i, errCMADP)
 						return
@@ -339,7 +340,7 @@ func dataResolve(config map[interface{}]interface{}, sc *bec.SafeConfig) {
 }
 
 // Make blackboxConfiguration
-func blackboxConfig(blackboxFile string, first bool) (*bec.SafeConfig, error) {
+func blackboxConfig(blackboxFile string, first bool) (blackboxadapter.ConfigLoader, error) {
 
 	location := "./blackbox_exporter/" + blackboxFile
 
@@ -356,13 +357,11 @@ func blackboxConfig(blackboxFile string, first bool) (*bec.SafeConfig, error) {
 
 	}
 
-	logger := logger.NewNopLogger()
-
-	if err := sc.ReloadConfig(location, logger); err != nil {
+	if err := blackboxLoader.Reload(location); err != nil {
 		return nil, err
 	}
 
-	return sc, nil
+	return blackboxLoader, nil
 }
 
 // // 解析map並做分析

@@ -13,7 +13,6 @@ import (
 	tCheck "blackbox_agent/handler/yaml_check/target"
 
 	"github.com/b85bagent/rabbitmq"
-	logger "github.com/go-kit/log"
 	"github.com/streadway/amqp"
 )
 
@@ -29,8 +28,19 @@ var wg sync.WaitGroup
 // 開啟rabbitMQ監聽
 func ListenRabbitMQ(reload chan bool) error {
 	rabbitMQ := server.GetServerInstance().GetRabbitMQArg()
+	if len(rabbitMQ.Host) == 0 || strings.TrimSpace(rabbitMQ.Host[0]) == "" {
+		log.Println("RabbitMQ host is empty, skip ListenRabbitMQ")
+		return nil
+	}
+	if len(rabbitMQ.RabbitMQQueue) == 0 {
+		log.Println("RabbitMQ queue is empty, skip ListenRabbitMQ")
+		return nil
+	}
 
 	for _, v := range rabbitMQ.RabbitMQQueue {
+		if strings.TrimSpace(v) == "" {
+			continue
+		}
 		rabbitMQArg := getRabbitMQArg(rabbitMQ, v)
 		fileLocation := determineFileLocation(v)
 		localResponse := initRPCResponse(rabbitMQArg)
@@ -44,8 +54,12 @@ func ListenRabbitMQ(reload chan bool) error {
 }
 
 func getRabbitMQArg(rabbitMQ server.RabbitMQArg, queueName string) rabbitmq.RabbitMQArg {
+	host := ""
+	if len(rabbitMQ.Host) > 0 {
+		host = rabbitMQ.Host[0]
+	}
 	return rabbitmq.RabbitMQArg{
-		Host:               rabbitMQ.Host[0],
+		Host:               host,
 		Username:           rabbitMQ.Username,
 		Password:           rabbitMQ.Password,
 		RabbitMQExchange:   rabbitMQ.RabbitMQExchange,
@@ -283,9 +297,8 @@ func handleReloadConfig(content []byte) error {
 		return err
 	}
 
-	// 使用臨時檔案進行 ReloadConfig 操作
-	logger := logger.NewNopLogger()
-	if err := sc.ReloadConfig(tmpfile.Name(), logger); err != nil {
+	validationLoader := blackboxBackend.NewLoader()
+	if err := validationLoader.Reload(tmpfile.Name()); err != nil {
 		return err
 	}
 

@@ -1,10 +1,11 @@
 #Opensearch 
 opensearch:
-  index: ${OPENSEARCH_INDEX} #opensearch index
+  # OPENSEARCH_INDEX example: discovery-index
+  index: ${OPENSEARCH_INDEX}
   enable: false
   One:
-    #    host: [${OPENSEARCH}]
-    host: [${OPENSEARCH}]  # ["https://10.11.233.102:9200"]
+    # OPENSEARCH example: https://10.11.233.102:9200
+    host: [${OPENSEARCH}]
     username: ${OPENSEARCH_USER}
     password: ${OPENSEARCH_PASS}
 
@@ -12,20 +13,23 @@ opensearch:
 
 rabbitMQ:
   One:
-    host: [${RABBITMQ}] # RabbitMQ IP
+    # RABBITMQ example: 10.11.233.80:5672
+    host: [${RABBITMQ}]
     username: ${RABBITMQ_USER}
     password: ${RABBITMQ_PASS}
-    RabbitMQExchange: "format" 
-    RabbitMQRoutingKey: "format" 
-    RabbitMQQueue: ["rpc-modules","rpc-scrape-configs"] 
+    RabbitMQExchange: "format"
+    RabbitMQRoutingKey: "format"
+    RabbitMQQueue: ["rpc-modules", "rpc-scrape-configs"]
 
 #Prometheus
 prometheus:
-  One:
-    #host: ["http://10.11.233.10:9090/api/v1/write"]
-    host: [${PROMETHEUS_URL}]
-    enable: true
-
+  # PROMETHEUS_URL example: http://10.11.233.10:9090/api/v1/write
+  prometheusUrl: ${PROMETHEUS_URL}
+  username: ${PROMETHEUS_USERNAME}
+  password: ${PROMETHEUS_PASSWORD}
+  prometheusCert: ${PROMETHEUS_CERT}
+  # INSECURETLS example: false
+  insecuretls: ${INSECURETLS}
 
 #Const
 const:
