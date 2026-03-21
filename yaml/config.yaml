@@ -1,36 +1,39 @@
 #Opensearch 
 opensearch:
-  index: "lex-test12-%{YYYY-MM-DD}"
+  # OPENSEARCH_INDEX example: discovery-index
+  index: ${OPENSEARCH_INDEX}
   enable: false
   One:
-    host: ${OPENSEARCH_HOST}  # ["https://10.11.233.102:9200"]
-    username: "admin"
-    password: "systex123!"
+    # OPENSEARCH example: https://10.11.233.102:9200
+    host: [${OPENSEARCH}]
+    username: ${OPENSEARCH_USER}
+    password: ${OPENSEARCH_PASS}
 
 #RabbitMQ
 
 rabbitMQ:
   One:
-    host: ["10.11.233.80:5672"] 
-    username: "admin"
-    password: "admin123"
-    RabbitMQExchange: "format" 
-    RabbitMQRoutingKey: "format" 
-    RabbitMQQueue: ["rpc-modules","rpc-scrape-configs"] 
+    # RABBITMQ example: 10.11.233.80:5672
+    host: [${RABBITMQ}]
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASS}
+    RabbitMQExchange: "format"
+    RabbitMQRoutingKey: "format"
+    RabbitMQQueue: ["rpc-modules", "rpc-scrape-configs"]
 
 #Prometheus
 prometheus:
+  # PROMETHEUS_URL example: http://10.11.233.10:9090/api/v1/write
   prometheusUrl: ${PROMETHEUS_URL}
   username: ${PROMETHEUS_USERNAME}
   password: ${PROMETHEUS_PASSWORD}
-  prometheus_cert: ${PROMETHEUS_CERT}
+  prometheusCert: ${PROMETHEUS_CERT}
+  # INSECURETLS example: false
   insecuretls: ${INSECURETLS}
-
-
 
 #Const
 const:
   httpRetrySecond: 5
-  debug: true
+  debug: false
   maxGoroutines: 500
   http_server_port: "8081"
